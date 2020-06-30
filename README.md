@@ -65,13 +65,17 @@ Feel free to PR if you need something extra.
 ## Events
 
 `error (error)` on error
+
 `close` on connection closed
+
 `tick` on market data tick
 
 ## Contract shortcuts
 
 `Contract.forex('EURUSD')`
+
 `Contract.stock('AAPL')`
+
 `Contract.stock({symbol: 'AMD', conId: 4391})` - with extra fields
 
 ## Order shortcuts
