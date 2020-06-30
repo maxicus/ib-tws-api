@@ -1,5 +1,7 @@
 import EventEmitter from 'events';
 import assert from 'assert';
+import util from 'util';
+const debuglog = util.debuglog('ib-tws-api');
 
 import ProtocolBytes from './protocol-bytes.js';
 import IncomeFieldsetHandler from './income-fieldset-handler.js';
@@ -20,11 +22,6 @@ import {
 /* Protocol's fieldset-level handing */
 class Client {
   constructor() {
-    this._log_error = this._noop;
-    this._log_info = this._noop;
-    this._log_debug = this._noop;
-    this._log_debug_bytes = this._noop;
-
     this._emitter = new EventEmitter();
     this._emitter.on('error', (e) => {
       // error handler to ignore it by default
@@ -37,18 +34,11 @@ class Client {
       host,
       port,
       clientId,
-      timeoutMs,
-      log_error: callback for logging,
-      log_info: callback for logging,
-      log_debug: callback for logging,
-      log_debug_bytes: callback for logging bytes-level messages
+      timeoutMs
     }
   */
   async connect(p = {}) {
     this._clientId = p.clientId || 1;
-    this._log_error = p.log_error || console.log;
-    this._log_info = p.log_info || this._noop;
-    this._log_debug = p.log_debug || this._noop;
 
     // build protocol bytes object
     this._protocolBytes = new ProtocolBytes();
@@ -68,19 +58,13 @@ class Client {
     await this._protocolBytes.connect({
       host: p.host,
       port: p.port,
-      clientId: this._clientId,
-      log_error: this._log_error,
-      log_info: this._log_info,
-      log_debug: p.log_debug_bytes || this._noop
+      clientId: this._clientId
     });
     this._protocolBytes.sendHandshake();
 
     // attach messages handler
     this._incomeHandler = new IncomeFieldsetHandler({
       timeoutMs: p.timeoutMs || 30000,
-      log_error: this._log_error,
-      log_info: this._log_info,
-      log_debug: this._log_debug,
       eventEmitter: this._emitter
     });
 
@@ -97,8 +81,8 @@ class Client {
 
     this._nextValidId = nextValidId;
 
-    this._log_info('connected ');
-    this._log_info({nextValidId: nextValidId, accounts: accounts});
+    debuglog('connected ');
+    debuglog({nextValidId: nextValidId, accounts: accounts});
   }
 
 
@@ -2274,11 +2258,6 @@ class Client {
 
     this._protocolBytes.sendFieldset(msg)
     */
-  }
-
-
-
-  _noop() {
   }
 }
 

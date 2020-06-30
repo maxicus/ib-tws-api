@@ -1,6 +1,7 @@
 import EventEmitter from 'events';
 import net from 'net';
 import util from 'util';
+const debuglog = util.debuglog('ib-tws-api-bytes');
 
 
 
@@ -16,9 +17,6 @@ class ProtocolBytes {
   connect(p = {}) {
     p.host = p.host || '127.0.0.1';
     this._clientId = p.clientId;
-    this._log_error = p.log_error;
-    this._log_info = p.log_info;
-    this._log_debug = p.log_debug;
     this._socket = new net.Socket();
 
     this._socket.on('data', (data) => {
@@ -26,18 +24,18 @@ class ProtocolBytes {
     });
 
     this._socket.on('close', (e) => {
-      this._log_info('ProtocolBytes: close');
+      debuglog('ProtocolBytes: close');
       this._emitter.emit('close');
     });
 
     this._socket.on('end', (e) => {
-      this._log_info('ProtocolBytes: end');
+      debuglog('ProtocolBytes: end');
       this._emitter.emit('close');
     });
 
     this._socket.on('error', (e) => {
-      this._log_error('ProtocolBytes: error');
-      this._log_error(e);
+      debuglog('ProtocolBytes: error');
+      debuglog(e);
       this._emitter.emit('error', e);
     });
 
@@ -70,8 +68,8 @@ class ProtocolBytes {
 
 
   sendFieldset(fields) {
-    this._log_debug('sending fieldset');
-    this._log_debug(fields);
+    debuglog('sending fieldset');
+    debuglog(fields);
     let fieldsStrings = fields.map((i) => {
       if (i == null) {
         return '';
@@ -93,10 +91,10 @@ class ProtocolBytes {
     let string = fieldsStrings.join('\0') + '\0';
     let message = this._serializeString(string);
 
-    this._log_debug('sending (serialized)');
-    this._log_debug(fieldsStrings);
-    this._log_debug(string);
-    this._log_debug(message);
+    debuglog('sending (serialized)');
+    debuglog(fieldsStrings);
+    debuglog(string);
+    debuglog(message);
 
     this._socket.write(message);
   }
@@ -114,7 +112,7 @@ class ProtocolBytes {
     let msg = this._serializeString(v100version);
     this._socket.write(msg);
 
-    this._log_info('connection handshake sent');
+    debuglog('connection handshake sent');
   }
 
 
@@ -148,9 +146,9 @@ class ProtocolBytes {
 
 
   _onData(data) {
-    this._log_debug('received packet');
-    this._log_debug(data);
-    this._log_debug(data.toString('ascii'));
+    debuglog('received packet');
+    debuglog(data);
+    debuglog(data.toString('ascii'));
 
     if (this._dataPending) {
       this._dataPending = Buffer.concat([this._dataPending, data]);
@@ -161,7 +159,7 @@ class ProtocolBytes {
     while (this._dataPending) {
       let stringLength = this._dataPending.readInt32BE(0);
       if (this._dataPending.length < stringLength + 4) {
-        this._log_debug('not full message received, waiting for remainder');
+        debuglog('not full message received, waiting for remainder');
         return;
       }
 
@@ -175,8 +173,8 @@ class ProtocolBytes {
       let messageFields = messageString.split("\0");
       messageFields.pop();   // last item is always empty
 
-      this._log_debug('received message fields');
-      this._log_debug(messageFields);
+      debuglog('received message fields');
+      debuglog(messageFields);
 
       this._emitter.emit('message_fieldset', messageFields);
     }

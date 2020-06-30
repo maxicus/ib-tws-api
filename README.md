@@ -56,18 +56,9 @@ setTimeout(() => {
 
 ## Logging / debugging
 
-`log_` parameters cant be used for your logging callbacks.
-Example of full console logging:
-
-```
-await api.connect({
-  host: '127.0.0.1',
-  port: 4001,
-  log_info: console.log,
-  log_debug: console.log,
-  log_debug_bytes: console.log
-})
-```
+Define
+- `NODE_DEBUG=ib-tws-api` for debug info at logic level
+- `NODE_DEBUG=ib-tws-api-bytes` for debug info at byte level
 
 ## Commands
 
@@ -82,10 +73,6 @@ Feel free to PR if you want to support more commands.
 - `port`
 - `clientId` defaults to 1
 - `timeoutMs` timeout in msec for request/response calls
-- `log_error` callback for logging
-- `log_info` callback for logging
-- `log_debug` callback for logging
-- `log_debug_bytes`: callback for logging bytes-level messages
 
 `async getCurrentTime()` Asks the current system time on the server side
 

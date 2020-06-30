@@ -8,9 +8,6 @@ async function run() {
   await api.connect({
     host: '127.0.0.1',
     port: 4001,
-    log_info: console.log,
-    log_debug: console.log,
-    log_debug_bytes: console.log
   })
 
   let details = await api.getSecDefOptParams({

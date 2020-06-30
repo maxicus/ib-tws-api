@@ -1,3 +1,6 @@
+import util from 'util';
+const debuglog = util.debuglog('ib-tws-api');
+
 import IncomeMessageType from './const-income-message-type.js';
 import IncomeFieldsetHandlerByType from './income-fieldset-handlers/index.js';
 import IncomeFieldsetHandlerBus from './income-fieldset-handler-bus.js';
@@ -6,10 +9,7 @@ import IncomeFieldsetHandlerBus from './income-fieldset-handler-bus.js';
 
 class IncomeFieldsetHandler {
   constructor(p = {}) {
-    this._bus = new IncomeFieldsetHandlerBus(p.timeoutMs, p.eventEmitter,
-      p.log_debug);
-    this._log_error = p.log_error;
-    this._log_debug = p.log_debug;
+    this._bus = new IncomeFieldsetHandlerBus(p.timeoutMs, p.eventEmitter);
   }
 
 
@@ -21,7 +21,7 @@ class IncomeFieldsetHandler {
 
 
   processMessageFieldsetBeforeServerVersion(fields) {
-    this._log_debug('processMessageFieldsetBeforeServerVersion');
+    debuglog('processMessageFieldsetBeforeServerVersion');
 
     if (fields.length == 2) {
       // first message sent after handshake
@@ -38,10 +38,10 @@ class IncomeFieldsetHandler {
 
 
   _processByType(messageTypeId, fields) {
-    this._log_debug('processByType. processing message ' + messageTypeId);
+    debuglog('processByType. processing message ' + messageTypeId);
 
     if (!IncomeFieldsetHandlerByType[messageTypeId]) {
-      this._log_error('unknown message type ID ' + messageTypeId);
+      debuglog('unknown message type ID ' + messageTypeId);
       return;
     }
 

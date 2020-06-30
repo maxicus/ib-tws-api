@@ -1,12 +1,13 @@
 import EventEmitter from 'events';
+import util from 'util';
+const debuglog = util.debuglog('ib-tws-api');
 
 
 
 class IncomeFieldsetHandlerBus {
-  constructor(timeoutMs, eventEmitter, log_debug) {
+  constructor(timeoutMs, eventEmitter) {
     this._timeoutMs = timeoutMs;
     this._eventEmitter = eventEmitter;
-    this._log_debug = log_debug;
 
     this.serverVersion = null;
 
@@ -18,8 +19,8 @@ class IncomeFieldsetHandlerBus {
 
 
   emit(event, value) {
-    this._log_debug('sending event ' + event);
-    this._log_debug(value);
+    debuglog('sending event ' + event);
+    debuglog(value);
 
     this._eventEmitter.emit(event, value);
   }
@@ -126,11 +127,11 @@ class IncomeFieldsetHandlerBus {
 
 
   requestIdEmit(requestId, event, value) {
-    this._log_debug('sending event ' + requestId + ' ' + event);
-    this._log_debug(value);
+    debuglog('sending event ' + requestId + ' ' + event);
+    debuglog(value);
 
     if (!this._requestIdData[requestId]) {
-      this._log_debug('this requestId not awaited');
+      debuglog('this requestId not awaited');
       return;
     }
 

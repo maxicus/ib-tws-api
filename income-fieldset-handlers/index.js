@@ -1,3 +1,6 @@
+import util from 'util';
+const debuglog = util.debuglog('ib-tws-api');
+
 import IncomeMessageType from '../const-income-message-type.js';
 import ServerVersion from '../const-server-version.js';
 import {
@@ -721,7 +724,7 @@ export default {
 
   [IncomeMessageType._SERVER_VERSION]: function(fields) {
     const serverVersion = parseInt(fields[0]);
-    console.log('Logged on to server version ' + serverVersion);
+    debuglog('Logged on to server version ' + serverVersion);
     this.messageTypeResolve(IncomeMessageType._SERVER_VERSION, serverVersion);
   }
 };
