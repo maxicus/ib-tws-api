@@ -174,7 +174,7 @@ class Client {
 
 
   /*
-  Starts to stream market data
+  Returns market data snapshot
   see reqMktData for parameters
   */
   async getMarketDataSnapshot(p) {
@@ -257,8 +257,6 @@ class Client {
     tickType: str,
     numberOfTicks: int,
     ignoreSize: bool
-
-    returns requestId
     */
     assert(!p.requestId);
 
@@ -284,7 +282,7 @@ class Client {
                                implVolOptions:TagValueList*/) {
     throw new Error('not implemented yet');
     /*
-    """Call this function to calculate volatility for a supplied
+    """calculate volatility for a supplied
     option price and underlying price. Result will be delivered
     via EWrapper.tickOptionComputation()
 
@@ -348,7 +346,7 @@ class Client {
   async cancelCalculateImpliedVolatility(/*self, requestId:TickerId*/) {
     throw new Error('not implemented yet');
     /*
-    """Call this function to cancel a request to calculate
+    """cancel a request to calculate
     volatility for a supplied option price and underlying price.
 
     requestId:TickerId - The request ID.  """
@@ -375,7 +373,7 @@ class Client {
                          optPrcOptions:TagValueList*/) {
     throw new Error('not implemented yet');
     /*
-    """Call this function to calculate option price and greek values
+    """calculate option price and greek values
     for a supplied volatility and underlying price.
 
     requestId:TickerId -    The ticker ID.
@@ -438,7 +436,7 @@ class Client {
   async cancelCalculateOptionPrice(/*self, requestId:TickerId*/) {
     throw new Error('not implemented yet');
     /*
-    """Call this function to cancel a request to calculate the option
+    """cancel a request to calculate the option
     price and greek values for a supplied volatility and underlying price.
 
     requestId:TickerId - The request ID.  """
@@ -529,7 +527,7 @@ class Client {
 
   placeOrder(p) {
     /*
-    Call this function to place an order. The order status will
+    place an order. The order status will
     be returned by the orderStatus event.
 
     contract:Contract - This structure contains a description of the
@@ -550,7 +548,7 @@ class Client {
 
 
   async cancelOrder(orderId) {
-    /* Call this function to cancel an order. */
+    /* cancel an order. */
 
     this._protocolBytes.sendFieldset([
       OutcomeMessageType.CANCEL_ORDER,
@@ -564,7 +562,7 @@ class Client {
 
 
   async getOpenOrders() {
-    /* Call this function to request the open orders that were
+    /* request the open orders that were
     placed from this client. Each open order will be fed back through the
     openOrder() and orderStatus() functions on the EWrapper.
 
@@ -585,7 +583,7 @@ class Client {
 
 
   async reqAutoOpenOrders(bAutoBind) {
-    /* Call this function to request that newly created TWS orders
+    /* request that newly created TWS orders
     be implicitly associated with the client. When a new TWS order is
     created, the order will be associated with the client, and fed back
     through the openOrder() and orderStatus() functions on the EWrapper.
@@ -605,7 +603,7 @@ class Client {
 
 
   async getAllOpenOrders() {
-    /* Call this function to request the open orders placed from all
+    /* request the open orders placed from all
     clients and also from TWS. Each open order will be fed back through the
     openOrder() and orderStatus() functions on the EWrapper.
 
@@ -644,7 +642,7 @@ class Client {
   */
 
   async reqAccountUpdates(p) {
-    /*Call this function to start getting account values, portfolio,
+    /* start getting account values, portfolio,
     and last update time information via EWrapper.updateAccountValue(),
     EWrapperi.updatePortfolio() and Wrapper.updateAccountTime().
 
@@ -759,7 +757,7 @@ class Client {
 
 
   async getPositions() {
-    /* Requests real-time position data for all accounts. */
+    /* Returns real-time position data for all accounts. */
     if (this._serverVersion < ServerVersion.MIN_SERVER_VER_POSITIONS) {
       throw new Error("It does not support positions request.");
     }
@@ -1007,12 +1005,9 @@ class Client {
   */
 
   async getContractDetails(contract) {
-    /* Call this function to download all details for a particular
-    underlying. The contract details will be received via the contractDetails()
-    function on the EWrapper.
+    /* download all details for a particular
+    underlying.
 
-    requestId:int - The ID of the data request. Ensures that responses are
-        make_fieldatched to requests if several requests are in process.
     contract:Contract - The summary description of the contract being looked
         up. */
     let requestId = this._allocateRequestId();
@@ -1108,7 +1103,7 @@ class Client {
                 numRows:int, isSmartDepth:bool, mktDepthOptions:TagValueList*/) {
     throw new Error('not implemented yet');
     /*
-    """Call this function to request market depth for a specific
+    """request market depth for a specific
     contract. The market depth will be returned by the updateMktDepth() and
     updateMktDepthL2() events.
 
@@ -1233,7 +1228,7 @@ class Client {
   async reqNewsBulletins(/*self, allMsgs:bool*/) {
     throw new Error('not implemented yet');
     /*
-    """Call this function to start receiving news bulletins. Each bulletin
+    """start receiving news bulletins. Each bulletin
     will be returned by the updateNewsBulletin() event.
 
     allMsgs:bool - If set to TRUE, returns all the existing bulletins for
@@ -1257,7 +1252,7 @@ class Client {
   async cancelNewsBulletins() {
     throw new Error('not implemented yet');
     /*
-    """Call this function to stop receiving news bulletins."""
+    """stop receiving news bulletins."""
 
     const VERSION = 1;
 
@@ -1278,7 +1273,7 @@ class Client {
   async reqManagedAccts() {
     throw new Error('not implemented yet');
     /*
-    """Call this function to request the list of managed accounts. The list
+    """request the list of managed accounts. The list
     will be returned by the managedAccounts() function on the EWrapper.
 
     Note:  This request can only be made when connected to a FA managed account."""
@@ -1299,7 +1294,7 @@ class Client {
   async requestFA(/*self, faData:FaDataType*/) {
     throw new Error('not implemented yet');
     /*
-    """Call this function to request FA configuration information from TWS.
+    """request FA configuration information from TWS.
     The data returns in an XML string via a "receiveFA" ActiveX event.
 
     faData:FaDataType - Specifies the type of Financial Advisor
@@ -1325,7 +1320,7 @@ class Client {
   async replaceFA(/*self, faData:FaDataType , cxml:str*/) {
     throw new Error('not implemented yet');
     /*
-    """Call this function to modify FA configuration information from the
+    """modify FA configuration information from the
     API. Note that this can also be done manually in TWS itself.
 
     faData:FaDataType - Specifies the type of Financial Advisor
@@ -1358,8 +1353,7 @@ class Client {
   async getHistoricalData(p) {
     /*
     Requests contracts' historical data. When requesting historical data, a
-    finishing time and date is required along with a duration string. The
-    resulting bars will be returned in EWrapper.historicalData()
+    finishing time and date is required along with a duration string.
 
     requestId:TickerId - The id of the request. Must be a unique value. When the
         market data returns, it whatToShowill be identified by this tag. This is also
@@ -1408,7 +1402,6 @@ class Client {
         1 - dates applying to bars returned in the format: yyyymmdd{space}{space}hh:mm:dd
         2 - dates are returned as a long integer specifying the number of seconds since
             1/1/1970 GMT.
-    chartOptions:TagValueList - For internal use only. Use default value XYZ.
     */
     assert(!p.requestId);
 
@@ -1695,9 +1688,7 @@ class Client {
   */
 
   async reqScannerParameters() {
-    /*
-    """Requests an XML string that describes all possible scanner queries."""
-    */
+    /* Requests an XML string that describes all possible scanner queries. */
     const VERSION = 1;
 
     this._protocolBytes.sendFieldset([OutcomeMessageType.REQ_SCANNER_PARAMETERS, VERSION]);
@@ -1897,7 +1888,7 @@ class Client {
                        reportType:str, fundamentalDataOptions:TagValueList*/) {
     throw new Error('not implemented yet');
     /*
-    """Call this function to receive fundamental data for
+    """receive fundamental data for
     stocks. The appropriate market data subscription must be set up in
     Account Management before you can receive this data.
     Fundamental data will be returned at EWrapper.fundamentalData().
@@ -1966,7 +1957,7 @@ class Client {
   async cancelFundamentalData(requestId) {
     throw new Error('not implemented yet');
     /*
-    """Call this function to stop receiving fundamental data.
+    """stop receiving fundamental data.
 
     requestId:TickerId - The ID of the data request."""
 
@@ -2193,10 +2184,7 @@ class Client {
     Response comes via EWrapper.securityDefinitionOptionParameter()
 
     contract:
-    underlyingSymbol:str,
     futFopExchange:str,
-    underlyingSecType:str,
-    underlyingConId:int
     */
     assert(!p.requestId);
 
@@ -2276,7 +2264,7 @@ class Client {
     /*
     apiOnly:bool
 
-    """Call this function to request the completed orders. If apiOnly parameter
+    """request the completed orders. If apiOnly parameter
     is true, then only completed orders placed from API are requested.
     Each completed order will be fed back through the
     completedOrder() function on the EWrapper."""

@@ -60,7 +60,7 @@ export default class Contract {
   static stop(data) {
     assert(data.action);
     assert(data.totalQuantity > 0);
-    assert(data.lmtPrice > 0);
+    assert(data.auxPrice > 0);
 
     return Contract._toOrder(data, 'STP', {
       transmit: true,
