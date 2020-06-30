@@ -7,6 +7,7 @@ import ProtocolBytes from './protocol-bytes.js';
 import IncomeFieldsetHandler from './income-fieldset-handler.js';
 import IncomeMessageType from './const-income-message-type.js';
 import OutcomeMessageType from './const-outcome-message-type.js';
+import RateLimiter from './rate-limiter.js';
 import ServerVersion from './const-server-version.js';
 import {
   request_mktData,
@@ -42,6 +43,9 @@ class Client {
 
     // build protocol bytes object
     this._protocolBytes = new ProtocolBytes();
+    this._rateLimiter = new RateLimiter((data) => {
+      return this._protocolBytes.sendFieldset(data);
+    }, 45, 1000, 5000);
 
     this._protocolBytes.on('message_fieldset', (o) => {
       this._onMessageFieldset(o);
@@ -87,12 +91,18 @@ class Client {
 
 
 
+  _sendFieldsetRateLimited(fields) {
+    this._rateLimiter.run(fields);
+  }
+
+
+
   _sendStartApi() {
     const START_API = 71;
     const VERSION = 2;
     const optCapab = '';
 
-    this._protocolBytes.sendFieldset(
+    this._sendFieldsetRateLimited(
       [START_API, VERSION, this._clientId, optCapab]);
   }
 
@@ -116,7 +126,7 @@ class Client {
 
   async getCurrentTime() {
     /* Asks the current system time on the server side. */
-    this._protocolBytes.sendFieldset([
+    this._sendFieldsetRateLimited([
       OutcomeMessageType.REQ_CURRENT_TIME,
       1 /* VERSION */
     ]);
@@ -144,10 +154,10 @@ class Client {
     p.genericTickList = p.genericTickList || '';
     p.snapshot = false;
     p.regulatorySnapshot = false;
-    this._protocolBytes.sendFieldset(request_mktData(this._serverVersion, p));
+    this._sendFieldsetRateLimited(request_mktData(this._serverVersion, p));
 
     return this._incomeHandler.requestIdEmitter(p.requestId, () => {
-      this._protocolBytes.sendFieldset([
+      this._sendFieldsetRateLimited([
         OutcomeMessageType.CANCEL_MKT_DATA,
         2 /* VERSION */,
         p.requestId
@@ -169,7 +179,7 @@ class Client {
     p.genericTickList = p.genericTickList || '';
     p.snapshot = true;
     p.regulatorySnapshot = p.regulatorySnapshot || false;
-    this._protocolBytes.sendFieldset(request_mktData(this._serverVersion, p));
+    this._sendFieldsetRateLimited(request_mktData(this._serverVersion, p));
 
     return await this._incomeHandler.awaitRequestId(p.requestId);
   }
@@ -191,7 +201,7 @@ class Client {
       throw new Error("It does not support market data type requests.");
     }
 
-    this._protocolBytes.sendFieldset([
+    this._sendFieldsetRateLimited([
       OutcomeMessageType.REQ_MARKET_DATA_TYPE,
       1 /*VERSION */,
       marketDataType
@@ -212,7 +222,7 @@ class Client {
         + flds.push(requestId) \
         + flds.push(bboExchange)
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -229,7 +239,7 @@ class Client {
     msg = flds.push(OutcomeMessageType.REQ_MARKET_RULE) \
         + flds.push(marketRuleId)
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -245,10 +255,10 @@ class Client {
     assert(!p.requestId);
 
     p.requestId = this._allocateRequestId();
-    this._protocolBytes.sendFieldset(request_tickByTickData(this._serverVersion, p));
+    this._sendFieldsetRateLimited(request_tickByTickData(this._serverVersion, p));
 
     return this._incomeHandler.requestIdEmitter(p.requestId, () => {
-      this._protocolBytes.sendFieldset(
+      this._sendFieldsetRateLimited(
         request_cancelTickByTickData(this._serverVersion, p.requestId));
     });
   }
@@ -321,7 +331,7 @@ class Client {
             flds.push(implVolOptStr)]
 
     msg = "".join(flds)
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -347,7 +357,7 @@ class Client {
         + flds.push(VERSION) \
         + flds.push(requestId)
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -411,7 +421,7 @@ class Client {
             flds.push(optPrcOptStr)]
 
     msg = "".join(flds)
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -437,7 +447,7 @@ class Client {
         + flds.push(VERSION) \
         + flds.push(requestId)
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -497,7 +507,7 @@ class Client {
         flds.push(override)]
 
     msg = "".join(flds)
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -523,7 +533,7 @@ class Client {
     p.orderId = this._allocateRequestId();
     p.order.clientId = this._clientId;
 
-    this._protocolBytes.sendFieldset(
+    this._sendFieldsetRateLimited(
       request_placeOrder(this._serverVersion, p));
 
     return p.orderId;
@@ -534,7 +544,7 @@ class Client {
   async cancelOrder(orderId) {
     /* cancel an order. */
 
-    this._protocolBytes.sendFieldset([
+    this._sendFieldsetRateLimited([
       OutcomeMessageType.CANCEL_ORDER,
       1 /* VERSION */,
       orderId
@@ -555,7 +565,7 @@ class Client {
     orderId will be generated. This association will persist over multiple
     API and TWS sessions.  */
 
-    this._protocolBytes.sendFieldset([
+    this._sendFieldsetRateLimited([
       OutcomeMessageType.REQ_OPEN_ORDERS,
       1 /* VERSION */
     ]);
@@ -578,7 +588,7 @@ class Client {
     associated with the client. If set to FALSE, no association will be
     made.*/
 
-    this._protocolBytes.sendFieldset([
+    this._sendFieldsetRateLimited([
       OutcomeMessageType.REQ_AUTO_OPEN_ORDERS,
       1 /* VERSION */,
       bAutoBind
@@ -594,7 +604,7 @@ class Client {
     Note:  No association is made between the returned orders and the
     requesting client. */
 
-    this._protocolBytes.sendFieldset([
+    this._sendFieldsetRateLimited([
       OutcomeMessageType.REQ_ALL_OPEN_ORDERS,
       1 /* VERSION */
     ]);
@@ -612,7 +622,7 @@ class Client {
     If the order was created in TWS, it also gets canceled. If the order
     was initiated in the API, it also gets canceled. */
 
-    this._protocolBytes.sendFieldset([
+    this._sendFieldsetRateLimited([
       OutcomeMessageType.REQ_GLOBAL_CANCEL,
       1 /* VERSION */
     ]);
@@ -638,7 +648,7 @@ class Client {
 
     const VERSION = 2;
 
-    this._protocolBytes.sendFieldset([
+    this._sendFieldsetRateLimited([
       OutcomeMessageType.REQ_ACCT_DATA,
       VERSION,
       p.subscribe,  // TRUE = subscribe, FALSE = unsubscribe.
@@ -715,7 +725,7 @@ class Client {
        + flds.push(groupName) \
        + flds.push(tags)
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -735,7 +745,7 @@ class Client {
        + flds.push(VERSION)   \
        + flds.push(requestId)
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -748,7 +758,7 @@ class Client {
 
     const VERSION = 1;
 
-    this._protocolBytes.sendFieldset([OutcomeMessageType.REQ_POSITIONS, VERSION]);
+    this._sendFieldsetRateLimited([OutcomeMessageType.REQ_POSITIONS, VERSION]);
     return await this._incomeHandler.awaitMessageType(IncomeMessageType.POSITION_END);
   }
 
@@ -762,7 +772,7 @@ class Client {
 
     const VERSION = 1;
 
-    this._protocolBytes.sendFieldset([OutcomeMessageType.CANCEL_POSITIONS, VERSION]);
+    this._sendFieldsetRateLimited([OutcomeMessageType.CANCEL_POSITIONS, VERSION]);
   }
 
 
@@ -788,7 +798,7 @@ class Client {
        + flds.push(account) \
        + flds.push(modelCode)
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -807,7 +817,7 @@ class Client {
        + flds.push(VERSION)   \
        + flds.push(requestId)     \
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -834,7 +844,7 @@ class Client {
        + flds.push(modelCode) \
        + flds.push(ledgerAndNLV)
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -853,7 +863,7 @@ class Client {
        + flds.push(VERSION)   \
        + flds.push(requestId)     \
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -877,7 +887,7 @@ class Client {
         + flds.push(account) \
         + flds.push(modelCode)
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -893,7 +903,7 @@ class Client {
     msg = flds.push(OutcomeMessageType.CANCEL_PNL) \
         + flds.push(requestId)
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -910,7 +920,7 @@ class Client {
         + flds.push(modelCode) \
         + flds.push(conid)
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -925,7 +935,7 @@ class Client {
     msg = flds.push(OutcomeMessageType.CANCEL_PNL_SINGLE) \
         + flds.push(requestId)
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -976,7 +986,7 @@ class Client {
         flds.push(execFilter.side)]
 
     msg = "".join(flds)
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -1059,7 +1069,7 @@ class Client {
       flds.push(contract.secId);
     }
 
-    this._protocolBytes.sendFieldset(flds);
+    this._sendFieldsetRateLimited(flds);
     return await this._incomeHandler.awaitRequestId(requestId);
   }
 
@@ -1079,7 +1089,7 @@ class Client {
 
     msg = flds.push(OutcomeMessageType.REQ_MKT_DEPTH_EXCHANGES)
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -1161,7 +1171,7 @@ class Client {
         flds += [flds.push(mktDataOptionsStr),]
 
     msg = "".join(flds)
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -1197,7 +1207,7 @@ class Client {
 
     msg = "".join(flds)
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -1227,7 +1237,7 @@ class Client {
         + flds.push(VERSION) \
         + flds.push(allMsgs)
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -1243,7 +1253,7 @@ class Client {
     msg = flds.push(OutcomeMessageType.CANCEL_NEWS_BULLETINS) \
         + flds.push(VERSION)
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -1269,7 +1279,7 @@ class Client {
     msg = flds.push(OutcomeMessageType.REQ_MANAGED_ACCTS) \
        + flds.push(VERSION)
 
-    return this._protocolBytes.sendFieldset(msg)
+    return this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -1295,7 +1305,7 @@ class Client {
        + flds.push(VERSION) \
        + flds.push(int(faData))
 
-    return this._protocolBytes.sendFieldset(msg)
+    return this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -1322,7 +1332,7 @@ class Client {
        + flds.push(int(faData)) \
        + flds.push(cxml) \
 
-    return this._protocolBytes.sendFieldset(msg)
+    return this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -1473,7 +1483,7 @@ class Client {
       flds.push(chartOptionsStr);
     }
 
-    this._protocolBytes.sendFieldset(flds);
+    this._sendFieldsetRateLimited(flds);
     return await this._incomeHandler.awaitRequestId(requestId);
   }
 
@@ -1487,7 +1497,7 @@ class Client {
     requestId:TickerId - The ticker ID. Must be a unique value. */
     const VERSION = 1;
 
-    this._protocolBytes.sendFieldset([
+    this._sendFieldsetRateLimited([
       OutcomeMessageType.CANCEL_HISTORICAL_DATA,
       VERSION,
       requestId
@@ -1535,7 +1545,7 @@ class Client {
       formatDate
     ];
 
-    this._protocolBytes.sendFieldset(flds);
+    this._sendFieldsetRateLimited(flds);
     return await this._incomeHandler.awaitRequestId(requestId);
   }
 
@@ -1546,7 +1556,7 @@ class Client {
       throw new Error("It does not support head time stamp requests.");
     }
 
-    this._protocolBytes.sendFieldset([OutcomeMessageType.CANCEL_HEAD_TIMESTAMP, requestId]);
+    this._sendFieldsetRateLimited([OutcomeMessageType.CANCEL_HEAD_TIMESTAMP, requestId]);
   }
 
 
@@ -1566,7 +1576,7 @@ class Client {
       throw new Error("It does not support histogram requests.");
     }
 
-    this._protocolBytes.sendFieldset([
+    this._sendFieldsetRateLimited([
       OutcomeMessageType.REQ_HISTOGRAM_DATA,
       requestId,
       contract.conId,
@@ -1596,7 +1606,7 @@ class Client {
       throw new Error("It does not support histogram requests.");
     }
 
-    this._protocolBytes.sendFieldset([OutcomeMessageType.CANCEL_HISTOGRAM_DATA, requestId]);
+    this._sendFieldsetRateLimited([OutcomeMessageType.CANCEL_HISTOGRAM_DATA, requestId]);
   }
 
 
@@ -1659,7 +1669,7 @@ class Client {
 
     flds.push(miscOptionsString);
 
-    this._protocolBytes.sendFieldset(flds);
+    this._sendFieldsetRateLimited(flds);
     return await this._incomeHandler.awaitRequestId(requestId);
   }
 
@@ -1675,7 +1685,7 @@ class Client {
     /* Requests an XML string that describes all possible scanner queries. */
     const VERSION = 1;
 
-    this._protocolBytes.sendFieldset([OutcomeMessageType.REQ_SCANNER_PARAMETERS, VERSION]);
+    this._sendFieldsetRateLimited([OutcomeMessageType.REQ_SCANNER_PARAMETERS, VERSION]);
     return await this._incomeHandler.awaitMessageType(IncomeMessageType.SCANNER_PARAMETERS);
   }
 
@@ -1750,7 +1760,7 @@ class Client {
       }
     }
 
-    this._protocolBytes.sendFieldset(flds);
+    this._sendFieldsetRateLimited(flds);
     return await this._incomeHandler.awaitRequestId(requestId);
   }
 
@@ -1760,7 +1770,7 @@ class Client {
     /* requestId:int - The ticker ID. Must be a unique value. */
     const VERSION = 1;
 
-    this._protocolBytes.sendFieldset([OutcomeMessageType.CANCEL_SCANNER_SUBSCRIPTION, VERSION, requestId]);
+    this._sendFieldsetRateLimited([OutcomeMessageType.CANCEL_SCANNER_SUBSCRIPTION, VERSION, requestId]);
   }
 
 
@@ -1844,7 +1854,7 @@ class Client {
         flds += [flds.push(realTimeBarsOptionsStr),]
 
     msg = "".join(flds)
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -1857,7 +1867,7 @@ class Client {
     const VERSION = 1;
 
     // send req mkt data msg
-    this._protocolBytes.sendFieldset([OutcomeMessageType.CANCEL_REAL_TIME_BARS, VERSION, requestId]);
+    this._sendFieldsetRateLimited([OutcomeMessageType.CANCEL_REAL_TIME_BARS, VERSION, requestId]);
   }
 
 
@@ -1932,7 +1942,7 @@ class Client {
             flds.push(fundDataOptStr)]
 
     msg = "".join(flds)
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -1957,7 +1967,7 @@ class Client {
        + flds.push(VERSION)   \
        + flds.push(requestId)
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -1978,7 +1988,7 @@ class Client {
 
     msg = flds.push(OutcomeMessageType.REQ_NEWS_PROVIDERS)
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -2007,7 +2017,7 @@ class Client {
         flds += [flds.push(newsArticleOptionsStr),]
 
     msg = "".join(flds)
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -2040,7 +2050,7 @@ class Client {
         flds += [flds.push(historicalNewsOptionsStr),]
 
     msg = "".join(flds)
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -2073,7 +2083,7 @@ class Client {
        + flds.push(VERSION)   \
        + flds.push(requestId)
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -2099,7 +2109,7 @@ class Client {
        + flds.push(requestId) \
        + flds.push(groupId)
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -2130,7 +2140,7 @@ class Client {
        + flds.push(requestId) \
        + flds.push(contractInfo)
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -2152,7 +2162,7 @@ class Client {
        + flds.push(VERSION)   \
        + flds.push(requestId)
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -2182,7 +2192,7 @@ class Client {
       throw new Error("It does not support security definition option request.");
     }
 
-    this._protocolBytes.sendFieldset([OutcomeMessageType.REQ_SEC_DEF_OPT_PARAMS,
+    this._sendFieldsetRateLimited([OutcomeMessageType.REQ_SEC_DEF_OPT_PARAMS,
       requestId,
       underlyingSymbol,
       futFopExchange,
@@ -2206,7 +2216,7 @@ class Client {
     msg = flds.push(OutcomeMessageType.REQ_SOFT_DOLLAR_TIERS) \
        + flds.push(requestId)
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -2220,7 +2230,7 @@ class Client {
 
     msg = flds.push(OutcomeMessageType.REQ_FAMILY_CODES)
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -2237,7 +2247,7 @@ class Client {
        + flds.push(requestId)   \
        + flds.push(pattern)
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 
@@ -2256,7 +2266,7 @@ class Client {
     msg = flds.push(OutcomeMessageType.REQ_COMPLETED_ORDERS) \
         + flds.push(apiOnly)
 
-    this._protocolBytes.sendFieldset(msg)
+    this._sendFieldsetRateLimited(msg)
     */
   }
 }
