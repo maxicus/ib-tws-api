@@ -117,7 +117,7 @@ export default class Contract {
   multiplier:
   currency:
   */
-  static futuresOption(data) {
+  static option(data) {
     assert(data.symbol != null);
     assert(data.right != null);
     assert(data.lastTradeDateOrContractMonth != null);

@@ -226,6 +226,9 @@ market data.
 
 - `contract`: contract of the underlying security. conId has to be specified
 - `futFopExchange`: str
+- `exchange`: client-side filter of exchange of option's,
+      since futFopExchange returns empty result when specified)
+
 
 
 ## Events

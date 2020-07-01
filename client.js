@@ -2179,6 +2179,8 @@ class Client {
 
     contract:
     futFopExchange:str,
+    exchange: client-side filter of exchange of option's,
+      since futFopExchange returns empty result when specified)
     */
     assert(!p.requestId);
 
@@ -2199,7 +2201,20 @@ class Client {
       underlyingSecType,
       underlyingConId
     ]);
-    return await this._incomeHandler.awaitRequestId(requestId);
+
+    let result = await this._incomeHandler.awaitRequestId(requestId);
+    if (!p.exchange) {
+      return result;
+    }
+
+    // client-side filter
+    for (let n = 0; n < result.length; n++) {
+      if (result[n].exchange == p.exchange) {
+        return result[n];
+      }
+    }
+
+    return null;
   }
 
 
