@@ -118,10 +118,7 @@ market data.
     made.
 
 `async getAllOpenOrders()` Call this function to request the open orders placed from all
-      clients and also from TWS. Each open order will be fed back through the
-      openOrder() and orderStatus() functions on the EWrapper.
-
-      Note:  No association is made between the returned orders and the
+      clients and also from TWS. No association is made between the returned orders and the
       requesting client.
 
 `async reqGlobalCancel()` Cancel all open orders globally. It cancels both API and TWS open orders.
@@ -255,8 +252,7 @@ I had to write that piece of code since I couldn't find acceptable Node.js clien
 for IB but it wasn't desirable to add python to the project stack.
 Hope you won't have to repeat the same.
 
-Feel free to contact me if you need some extra help.
-
+Feel free to contact me if you need some extra (paid) help with your software.
 
 # Disclaimer
 

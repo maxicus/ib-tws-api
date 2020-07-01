@@ -556,9 +556,7 @@ class Client {
 
 
   async getOpenOrders() {
-    /* request the open orders that were
-    placed from this client. Each open order will be fed back through the
-    openOrder() and orderStatus() functions on the EWrapper.
+    /* request the open orders that were placed from this client.
 
     Note:  The client with a clientId of 0 will also receive the TWS-owned
     open orders. These orders will be associated with the client and a new
@@ -579,8 +577,7 @@ class Client {
   async reqAutoOpenOrders(bAutoBind) {
     /* request that newly created TWS orders
     be implicitly associated with the client. When a new TWS order is
-    created, the order will be associated with the client, and fed back
-    through the openOrder() and orderStatus() functions on the EWrapper.
+    created, the order will be associated with the client.
 
     Note:  This request can only be made from a client with clientId of 0.
 
@@ -598,8 +595,7 @@ class Client {
 
   async getAllOpenOrders() {
     /* request the open orders placed from all
-    clients and also from TWS. Each open order will be fed back through the
-    openOrder() and orderStatus() functions on the EWrapper.
+    clients and also from TWS.
 
     Note:  No association is made between the returned orders and the
     requesting client. */
@@ -636,9 +632,7 @@ class Client {
   */
 
   async reqAccountUpdates(p) {
-    /* start getting account values, portfolio,
-    and last update time information via EWrapper.updateAccountValue(),
-    EWrapperi.updatePortfolio() and Wrapper.updateAccountTime().
+    /* start getting account values, portfolio, and last update time information
 
     subscribe:bool - If set to TRUE, the client will start receiving account
         and Portfoliolio updates. If set to FALSE, the client will stop
@@ -2175,7 +2169,6 @@ class Client {
     options are trading. Can be set to the empty string "" for all
     exchanges. underlyingSecType The type of the underlying security,
     i.e. STK underlyingConId the contract ID of the underlying security.
-    Response comes via EWrapper.securityDefinitionOptionParameter()
 
     contract:
     futFopExchange:str,
