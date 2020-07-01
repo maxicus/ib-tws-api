@@ -9,6 +9,7 @@ import {
   handler_TICK_GENERIC,
   handler_TICK_PRICE,
   handler_TICK_REQ_PARAMS,
+  handler_TICK_OPTION_COMPUTATION,
   handler_TICK_SIZE,
   handler_TICK_SNAPSHOT_END,
   handler_TICK_STRING
@@ -353,10 +354,7 @@ export default {
 
 
   // HandleInfo(proc=processTickOptionComputationMsg
-  [IncomeMessageType.TICK_OPTION_COMPUTATION]: todo('TICK_OPTION_COMPUTATION'),
-
-
-
+  [IncomeMessageType.TICK_OPTION_COMPUTATION]: handler_TICK_OPTION_COMPUTATION,
   [IncomeMessageType.TICK_GENERIC]: handler_TICK_GENERIC,
   [IncomeMessageType.TICK_STRING]: handler_TICK_STRING,
 
@@ -438,7 +436,7 @@ export default {
     let account = fields.shift();
 
     // decode contract fields
-    contract = {
+    let contract = {
       conId: parseInt(fields.shift()),
       symbol: fields.shift(),
       secType: fields.shift(),

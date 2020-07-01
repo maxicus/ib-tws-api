@@ -325,3 +325,71 @@ export function handler_TICK_BY_TICK(fields) {
     });
   }
 }
+
+
+
+export function handler_TICK_OPTION_COMPUTATION(fields) {
+  let version = parseInt(fields.shift());
+  let requestId = parseInt(fields.shift());
+  let tickTypeInt = parseInt(fields.shift());
+
+  let impliedVol = parseFloat(fields.shift());
+  let delta = parseFloat(fields.shift());
+  let optPrice = null;
+  let pvDividend = null;
+  let gamma = null;
+  let vega = null;
+  let theta = null;
+  let undPrice = null;
+
+  if (impliedVol < 0) {   // -1 is the "not computed" indicator
+    impliedVol = null;
+  }
+  if (delta == -2) {   // -2 is the "not computed" indicator
+    delta = null;
+  }
+
+  if (version >= 6 ||
+      tickTypeInt == TickType.MODEL_OPTION ||
+      tickTypeInt == TickType.DELAYED_MODEL_OPTION) {
+    optPrice = parseFloat(fields.shift());
+    pvDividend = parseFloat(fields.shift());
+
+    if (optPrice == -1) {   // -1 is the "not computed" indicator
+      optPrice = null;
+    }
+    if (pvDividend == -1) {   // -1 is the "not computed" indicator
+      pvDividend = null;
+    }
+  }
+
+  if (version >= 6) {
+    gamma = parseFloat(fields.shift());
+    vega = parseFloat(fields.shift());
+    theta = parseFloat(fields.shift());
+    undPrice = parseFloat(fields.shift());
+
+    if (gamma == -2) {   // -2 is the "not yet computed" indicator
+      gamma = null;
+    }
+    if (vega == -2) {   // # -2 is the "not yet computed" indicator
+      vega = null;
+    }
+    if (theta == -2) {   // -2 is the "not yet computed" indicator
+      theta = null;
+    }
+    if (undPrice == -1) {   // -1 is the "not computed" indicator
+      undPrice = null;
+    }
+  }
+
+  let storage = this.requestIdStorageMap(requestId);
+  storage.impliedVol = impliedVol;
+  storage.delta = delta;
+  storage.optPrice = optPrice;
+  storage.pvDividend = pvDividend;
+  storage.gamma = gamma;
+  storage.vega = vega;
+  storage.theta = theta;
+  storage.undPrice = undPrice;
+}
