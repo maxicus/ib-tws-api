@@ -2,7 +2,7 @@
   "name": "ib-tws-api",
   "type": "module",
   "description": "Interactive Brokers API client for Node.JS. TWS or IB Gateway as a server",
-  "version": "0.1.2",
+  "version": "1.0.0",
   "license": "MIT",
   "author": {
     "name": "Max Shaposhnikov",
