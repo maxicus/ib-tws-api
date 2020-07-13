@@ -191,7 +191,7 @@ export default {
       if (secIdListCount > 0) {
         contract.secIdList = [];
         for (let n = 0; n < secIdListCount; n++) {
-          tagValue = TagValue()
+          let tagValue = {};
           tagValue.tag = fields.shift();
           tagValue.value = fields.shift();
           contract.secIdList.push(tagValue);
