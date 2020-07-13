@@ -1502,7 +1502,10 @@ class Client {
 
   async getHeadTimeStamp(p) {
     /*
-    whatToShow: str, useRth: int, formatDate: int
+    contract:,
+    whatToShow: str,
+    useRth: int,
+    formatDate: int
 
     Note that formatData parameter affects intraday bars only
     1-day bars always return with date in YYYYMMDD format
