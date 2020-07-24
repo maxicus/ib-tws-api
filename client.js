@@ -2215,7 +2215,7 @@ class Client {
       }
     }
 
-    return null;
+    return [];
   }
 
 
