@@ -1,9 +1,13 @@
+import util from 'util';
+const debuglog = util.debuglog('ib-tws-api');
+
+
 
 export default class RateLimiter {
-  constructor(workload, callsPerSlot, slotIntervalMs, maxQueueLength = Infinity) {
+  constructor(workload, callsPerSlot, slotIntervalMs, timeoutMs) {
     this._slotIntervalMs = slotIntervalMs;
     this._callsPerSlot = callsPerSlot;
-    this._maxQueueLength = maxQueueLength;
+    this._timeoutMs = timeoutMs;
     this._queue = [];
     this._workload = workload;
   }
@@ -11,12 +15,31 @@ export default class RateLimiter {
 
 
   run(item) {
-    if (this.queueLength >= this.maxQueueLength) {
-      throw new Error('Too many requests queued');
-    }
-
     return new Promise((resolve, reject) => {
-      this._queue.push({ item, resolve, reject });
+      this._queue.push({
+        item,
+        resolve,
+        reject
+      });
+
+      if (this._queue.length == 1) {
+        process.nextTick(() => {
+          this._processQueue();
+        });
+      }
+    });
+  }
+
+
+
+  runExpirable(item) {
+    return new Promise((resolve, reject) => {
+      this._queue.push({
+        item,
+        resolve,
+        reject,
+        expireDate: Date.now() + this._timeoutMs
+      });
 
       if (this._queue.length == 1) {
         process.nextTick(() => {
@@ -43,9 +66,15 @@ export default class RateLimiter {
 
       if (this._slot_remaining > 0) {
         const i = this._queue.shift();
-        this._slot_remaining--;
 
-        Promise.resolve(this._workload(i.item)).then(i.resolve, i.reject);
+        if (i.expireDate && i.expireDate < Date.now()) {
+          // expired requests just ignored since timeout handled by
+          // IncomeFieldsetHandler.awaitRequestId
+          debuglog('RateLimiter: expired item ignored ' + i.item);
+        } else {
+          this._slot_remaining--;
+          Promise.resolve(this._workload(i.item)).then(i.resolve, i.reject);
+        }
       } else {
         if (this._timer) {
           clearTimeout(this._timer);

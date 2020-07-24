@@ -42,10 +42,11 @@ class Client {
     this._clientId = p.clientId || 1;
 
     // build protocol bytes object
+    const timeoutMs = p.timeoutMs || 30000;
     this._protocolBytes = new ProtocolBytes();
     this._rateLimiter = new RateLimiter((data) => {
       return this._protocolBytes.sendFieldset(data);
-    }, 45, 1000, 5000);
+    }, 45, 1000, timeoutMs);
 
     this._protocolBytes.on('message_fieldset', (o) => {
       this._onMessageFieldset(o);
@@ -68,7 +69,7 @@ class Client {
 
     // attach messages handler
     this._incomeHandler = new IncomeFieldsetHandler({
-      timeoutMs: p.timeoutMs || 30000,
+      timeoutMs,
       eventEmitter: this._emitter
     });
 
@@ -93,6 +94,12 @@ class Client {
 
   _sendFieldsetRateLimited(fields) {
     this._rateLimiter.run(fields);
+  }
+
+
+
+  _sendFieldsetExpirable(fields) {
+    this._rateLimiter.runExpirable(fields);
   }
 
 
@@ -126,7 +133,7 @@ class Client {
 
   async getCurrentTime() {
     /* Asks the current system time on the server side. */
-    this._sendFieldsetRateLimited([
+    this._sendFieldsetExpirable([
       OutcomeMessageType.REQ_CURRENT_TIME,
       1 /* VERSION */
     ]);
@@ -136,10 +143,10 @@ class Client {
   }
 
 
+
   /*########################################################################
   ################## Market Data
   ##########################################################################*/
-
 
   /*
   Starts to stream market data
@@ -179,10 +186,11 @@ class Client {
     p.genericTickList = p.genericTickList || '';
     p.snapshot = true;
     p.regulatorySnapshot = p.regulatorySnapshot || false;
-    this._sendFieldsetRateLimited(request_mktData(this._serverVersion, p));
+    this._sendFieldsetExpirable(request_mktData(this._serverVersion, p));
 
     return await this._incomeHandler.awaitRequestId(p.requestId);
   }
+
 
 
   async reqMarketDataType(marketDataType) {
@@ -544,7 +552,7 @@ class Client {
   async cancelOrder(orderId) {
     /* cancel an order. */
 
-    this._sendFieldsetRateLimited([
+    this._sendFieldsetExpirable([
       OutcomeMessageType.CANCEL_ORDER,
       1 /* VERSION */,
       orderId
@@ -563,7 +571,7 @@ class Client {
     orderId will be generated. This association will persist over multiple
     API and TWS sessions.  */
 
-    this._sendFieldsetRateLimited([
+    this._sendFieldsetExpirable([
       OutcomeMessageType.REQ_OPEN_ORDERS,
       1 /* VERSION */
     ]);
@@ -600,7 +608,7 @@ class Client {
     Note:  No association is made between the returned orders and the
     requesting client. */
 
-    this._sendFieldsetRateLimited([
+    this._sendFieldsetExpirable([
       OutcomeMessageType.REQ_ALL_OPEN_ORDERS,
       1 /* VERSION */
     ]);
@@ -752,7 +760,7 @@ class Client {
 
     const VERSION = 1;
 
-    this._sendFieldsetRateLimited([OutcomeMessageType.REQ_POSITIONS, VERSION]);
+    this._sendFieldsetExpirable([OutcomeMessageType.REQ_POSITIONS, VERSION]);
     return await this._incomeHandler.awaitMessageType(IncomeMessageType.POSITION_END);
   }
 
@@ -1063,7 +1071,7 @@ class Client {
       flds.push(contract.secId);
     }
 
-    this._sendFieldsetRateLimited(flds);
+    this._sendFieldsetExpirable(flds);
     return await this._incomeHandler.awaitRequestId(requestId);
   }
 
@@ -1477,7 +1485,7 @@ class Client {
       flds.push(chartOptionsStr);
     }
 
-    this._sendFieldsetRateLimited(flds);
+    this._sendFieldsetExpirable(flds);
     return await this._incomeHandler.awaitRequestId(requestId);
   }
 
@@ -1502,10 +1510,7 @@ class Client {
 
   async getHeadTimeStamp(p) {
     /*
-    contract:,
-    whatToShow: str,
-    useRth: int,
-    formatDate: int
+    whatToShow: str, useRth: int, formatDate: int
 
     Note that formatData parameter affects intraday bars only
     1-day bars always return with date in YYYYMMDD format
@@ -1542,7 +1547,7 @@ class Client {
       formatDate
     ];
 
-    this._sendFieldsetRateLimited(flds);
+    this._sendFieldsetExpirable(flds);
     return await this._incomeHandler.awaitRequestId(requestId);
   }
 
@@ -1558,7 +1563,7 @@ class Client {
 
 
 
-  async reqHistogramData(p) {
+  async getHistogramData(p) {
     /*
     contract: Contract,
     useRth: bool,
@@ -1573,7 +1578,7 @@ class Client {
       throw new Error("It does not support histogram requests.");
     }
 
-    this._sendFieldsetRateLimited([
+    this._sendFieldsetExpirable([
       OutcomeMessageType.REQ_HISTOGRAM_DATA,
       requestId,
       contract.conId,
@@ -1666,7 +1671,7 @@ class Client {
 
     flds.push(miscOptionsString);
 
-    this._sendFieldsetRateLimited(flds);
+    this._sendFieldsetExpirable(flds);
     return await this._incomeHandler.awaitRequestId(requestId);
   }
 
@@ -1757,7 +1762,7 @@ class Client {
       }
     }
 
-    this._sendFieldsetRateLimited(flds);
+    this._sendFieldsetExpirable(flds);
     return await this._incomeHandler.awaitRequestId(requestId);
   }
 
@@ -2190,7 +2195,7 @@ class Client {
       throw new Error("It does not support security definition option request.");
     }
 
-    this._sendFieldsetRateLimited([OutcomeMessageType.REQ_SEC_DEF_OPT_PARAMS,
+    this._sendFieldsetExpirable([OutcomeMessageType.REQ_SEC_DEF_OPT_PARAMS,
       requestId,
       underlyingSymbol,
       futFopExchange,
