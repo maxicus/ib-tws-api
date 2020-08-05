@@ -3,17 +3,15 @@ import { Client, Contract } from '../index.js';
 
 
 async function run() {
-  let api = new Client();
-
-  await api.connect({
+  let api = new Client({
     host: '127.0.0.1',
     port: 4001
-  })
+  });
 
   //let contract = Contract.stock('AAPL');
   let contract = Contract.forex('EURUSD');
 
-  let e = api.streamMarketData({
+  let e = await api.streamMarketData({
     contract: contract
   });
 

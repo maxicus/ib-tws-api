@@ -60,7 +60,7 @@ class IncomeFieldsetHandlerBus {
         }
       }
 
-      reject('timeout');
+      reject(new Error('ib-tws-api: timeout'));
     }, this._timeoutMs);
   }
 
@@ -188,7 +188,7 @@ class IncomeFieldsetHandlerBus {
         }
       }
 
-      reject('timeout');
+      reject(new Error('ib-tws-api: timeout'));
     }, this._timeoutMs);
 
     return key;

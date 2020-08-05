@@ -3,12 +3,10 @@ import { Client, Contract, Order } from '../index.js';
 
 
 async function run() {
-  let api = new Client();
-
-  await api.connect({
+  let api = new Client({
     host: '127.0.0.1',
     port: 4001
-  })
+  });
 
   let details = await api.getHistoricalTicks({
     contract: Contract.stock('AAPL'),

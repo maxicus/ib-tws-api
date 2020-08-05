@@ -22,28 +22,68 @@ import {
 
 /* Protocol's fieldset-level handing */
 class Client {
-  constructor() {
-    this._emitter = new EventEmitter();
-    this._emitter.on('error', (e) => {
-      // error handler to ignore it by default
-    });
-  }
-
-
-
-  /* p: {
+  /* connectionParameters: {
       host,
       port,
       clientId,
       timeoutMs
     }
   */
-  async connect(p = {}) {
-    this._clientId = p.clientId || 1;
+  constructor(connectionParameters = {}) {
+    this._connectionParameters = connectionParameters;
+    this._emitter = new EventEmitter();
+    this._emitter.on('error', (e) => {
+      // error handler to ignore it by default
+    });
+
+    this._connectionPromise = null;
+    this._connected = false;
+  }
+
+
+
+  async connect(p) {
+    if (p != null) {
+      this._connectionParameters = p;
+      console.error('ib-tws-api: deprecated use of Client.connect - please pass connection parameters to constructor instead');
+    }
+
+    await this._maybeConnect();
+  }
+
+
+
+  async _maybeConnect() {
+    if (this._connected) {
+      return;
+    }
+
+    if (this._connectionPromise == null) {
+      this._connectionPromise = this._connect();
+    }
+
+    try {
+      await this._connectionPromise;
+      this._connected = true;
+    } finally {
+      this._connectionPromise = null;
+    }
+  }
+
+
+
+  async _connect() {
+    if (this._protocolBytes) {
+      this._protocolBytes.removeAllListeners();   // allow gc to remove old
+    }
+
+    this._clientId = this._connectionParameters.clientId || 1;
+    this._serverVersion = 0;
 
     // build protocol bytes object
-    const timeoutMs = p.timeoutMs || 30000;
     this._protocolBytes = new ProtocolBytes();
+
+    const timeoutMs = this._connectionParameters.timeoutMs || 30000;
     this._rateLimiter = new RateLimiter((data) => {
       return this._protocolBytes.sendFieldset(data);
     }, 45, 1000, timeoutMs);
@@ -53,6 +93,7 @@ class Client {
     });
 
     this._protocolBytes.on('close', (e) => {
+      this._connected = false;
       this._emitter.emit('close');
     });
 
@@ -61,10 +102,11 @@ class Client {
     });
 
     await this._protocolBytes.connect({
-      host: p.host,
-      port: p.port,
+      host: this._connectionParameters.host,
+      port: this._connectionParameters.port,
       clientId: this._clientId
     });
+
     this._protocolBytes.sendHandshake();
 
     // attach messages handler
@@ -78,7 +120,7 @@ class Client {
     this._serverVersion = serverVersion;
     this._incomeHandler.setServerVersion(serverVersion);
 
-    this._sendStartApi();
+    this._connectSendStartApi();
     let [nextValidId, accounts] = await Promise.all([
       this._incomeHandler.awaitMessageType(IncomeMessageType.NEXT_VALID_ID),
       this._incomeHandler.awaitMessageType(IncomeMessageType.MANAGED_ACCTS)
@@ -92,25 +134,27 @@ class Client {
 
 
 
-  _sendFieldsetRateLimited(fields) {
+  _connectSendStartApi() {
+    const START_API = 71;
+    const VERSION = 2;
+    const optCapab = '';
+
+    this._protocolBytes.sendFieldset(
+      [START_API, VERSION, this._clientId, optCapab]);
+  }
+
+
+
+  async _sendFieldsetRateLimited(fields) {
+    await this._maybeConnect();
     this._rateLimiter.run(fields);
   }
 
 
 
-  _sendFieldsetExpirable(fields) {
+  async _sendFieldsetExpirable(fields) {
+    await this._maybeConnect();
     this._rateLimiter.runExpirable(fields);
-  }
-
-
-
-  _sendStartApi() {
-    const START_API = 71;
-    const VERSION = 2;
-    const optCapab = '';
-
-    this._sendFieldsetRateLimited(
-      [START_API, VERSION, this._clientId, optCapab]);
   }
 
 
@@ -125,7 +169,8 @@ class Client {
 
 
 
-  _allocateRequestId() {
+  async _allocateRequestId() {
+    await this._maybeConnect();
     return ++this._nextValidId;
   }
 
@@ -133,7 +178,7 @@ class Client {
 
   async getCurrentTime() {
     /* Asks the current system time on the server side. */
-    this._sendFieldsetExpirable([
+    await this._sendFieldsetExpirable([
       OutcomeMessageType.REQ_CURRENT_TIME,
       1 /* VERSION */
     ]);
@@ -152,16 +197,16 @@ class Client {
   Starts to stream market data
   see reqMktData for parameters
   */
-  streamMarketData(p) {
+  async streamMarketData(p) {
     assert(!p.requestId);
     assert(p.snapshot == null);
     assert(p.regulatorySnapshot == null);
 
-    p.requestId = this._allocateRequestId();
+    p.requestId = await this._allocateRequestId();
     p.genericTickList = p.genericTickList || '';
     p.snapshot = false;
     p.regulatorySnapshot = false;
-    this._sendFieldsetRateLimited(request_mktData(this._serverVersion, p));
+    await this._sendFieldsetRateLimited(request_mktData(this._serverVersion, p));
 
     return this._incomeHandler.requestIdEmitter(p.requestId, () => {
       this._sendFieldsetRateLimited([
@@ -182,11 +227,11 @@ class Client {
     assert(!p.requestId);
     assert(p.snapshot == null);
 
-    p.requestId = this._allocateRequestId();
+    p.requestId = await this._allocateRequestId();
     p.genericTickList = p.genericTickList || '';
     p.snapshot = true;
     p.regulatorySnapshot = p.regulatorySnapshot || false;
-    this._sendFieldsetExpirable(request_mktData(this._serverVersion, p));
+    await this._sendFieldsetExpirable(request_mktData(this._serverVersion, p));
 
     return await this._incomeHandler.awaitRequestId(p.requestId);
   }
@@ -209,7 +254,7 @@ class Client {
       throw new Error("It does not support market data type requests.");
     }
 
-    this._sendFieldsetRateLimited([
+    await this._sendFieldsetRateLimited([
       OutcomeMessageType.REQ_MARKET_DATA_TYPE,
       1 /*VERSION */,
       marketDataType
@@ -253,7 +298,7 @@ class Client {
 
 
 
-  streamTickByTickData(p) {
+  async streamTickByTickData(p) {
     /*
     contract: Contract,
     tickType: str,
@@ -262,8 +307,8 @@ class Client {
     */
     assert(!p.requestId);
 
-    p.requestId = this._allocateRequestId();
-    this._sendFieldsetRateLimited(request_tickByTickData(this._serverVersion, p));
+    p.requestId = await this._allocateRequestId();
+    await this._sendFieldsetRateLimited(request_tickByTickData(this._serverVersion, p));
 
     return this._incomeHandler.requestIdEmitter(p.requestId, () => {
       this._sendFieldsetRateLimited(
@@ -527,7 +572,7 @@ class Client {
   ########################################################################
   */
 
-  placeOrder(p) {
+  async placeOrder(p) {
     /*
     place an order. The order status will
     be returned by the orderStatus event.
@@ -538,10 +583,10 @@ class Client {
         Note: Each client MUST connect with a unique clientId.*/
     assert(!p.orderId);
 
-    p.orderId = this._allocateRequestId();
+    p.orderId = await this._allocateRequestId();
     p.order.clientId = this._clientId;
 
-    this._sendFieldsetRateLimited(
+    await this._sendFieldsetRateLimited(
       request_placeOrder(this._serverVersion, p));
 
     return p.orderId;
@@ -552,7 +597,7 @@ class Client {
   async cancelOrder(orderId) {
     /* cancel an order. */
 
-    this._sendFieldsetExpirable([
+    await this._sendFieldsetExpirable([
       OutcomeMessageType.CANCEL_ORDER,
       1 /* VERSION */,
       orderId
@@ -571,7 +616,7 @@ class Client {
     orderId will be generated. This association will persist over multiple
     API and TWS sessions.  */
 
-    this._sendFieldsetExpirable([
+    await this._sendFieldsetExpirable([
       OutcomeMessageType.REQ_OPEN_ORDERS,
       1 /* VERSION */
     ]);
@@ -593,7 +638,7 @@ class Client {
     associated with the client. If set to FALSE, no association will be
     made.*/
 
-    this._sendFieldsetRateLimited([
+    await this._sendFieldsetRateLimited([
       OutcomeMessageType.REQ_AUTO_OPEN_ORDERS,
       1 /* VERSION */,
       bAutoBind
@@ -608,7 +653,7 @@ class Client {
     Note:  No association is made between the returned orders and the
     requesting client. */
 
-    this._sendFieldsetExpirable([
+    await this._sendFieldsetExpirable([
       OutcomeMessageType.REQ_ALL_OPEN_ORDERS,
       1 /* VERSION */
     ]);
@@ -626,7 +671,7 @@ class Client {
     If the order was created in TWS, it also gets canceled. If the order
     was initiated in the API, it also gets canceled. */
 
-    this._sendFieldsetRateLimited([
+    await this._sendFieldsetRateLimited([
       OutcomeMessageType.REQ_GLOBAL_CANCEL,
       1 /* VERSION */
     ]);
@@ -650,7 +695,7 @@ class Client {
 
     const VERSION = 2;
 
-    this._sendFieldsetRateLimited([
+    await this._sendFieldsetRateLimited([
       OutcomeMessageType.REQ_ACCT_DATA,
       VERSION,
       p.subscribe,  // TRUE = subscribe, FALSE = unsubscribe.
@@ -760,7 +805,7 @@ class Client {
 
     const VERSION = 1;
 
-    this._sendFieldsetExpirable([OutcomeMessageType.REQ_POSITIONS, VERSION]);
+    await this._sendFieldsetExpirable([OutcomeMessageType.REQ_POSITIONS, VERSION]);
     return await this._incomeHandler.awaitMessageType(IncomeMessageType.POSITION_END);
   }
 
@@ -774,7 +819,7 @@ class Client {
 
     const VERSION = 1;
 
-    this._sendFieldsetRateLimited([OutcomeMessageType.CANCEL_POSITIONS, VERSION]);
+    await this._sendFieldsetRateLimited([OutcomeMessageType.CANCEL_POSITIONS, VERSION]);
   }
 
 
@@ -1006,7 +1051,7 @@ class Client {
 
     contract:Contract - The summary description of the contract being looked
         up. */
-    let requestId = this._allocateRequestId();
+    let requestId = await this._allocateRequestId();
 
     if (this._serverVersion < ServerVersion.MIN_SERVER_VER_SEC_ID_TYPE) {
       if (contract.secIdType || contract.secId) {
@@ -1071,7 +1116,7 @@ class Client {
       flds.push(contract.secId);
     }
 
-    this._sendFieldsetExpirable(flds);
+    await this._sendFieldsetExpirable(flds);
     return await this._incomeHandler.awaitRequestId(requestId);
   }
 
@@ -1401,7 +1446,7 @@ class Client {
     */
     assert(!p.requestId);
 
-    let requestId = this._allocateRequestId();
+    let requestId = await this._allocateRequestId();
     let contract = p.contract;
     let endDateTime = p.endDateTime;
     let durationStr = p.duration;
@@ -1485,7 +1530,7 @@ class Client {
       flds.push(chartOptionsStr);
     }
 
-    this._sendFieldsetExpirable(flds);
+    await this._sendFieldsetExpirable(flds);
     return await this._incomeHandler.awaitRequestId(requestId);
   }
 
@@ -1499,7 +1544,7 @@ class Client {
     requestId:TickerId - The ticker ID. Must be a unique value. */
     const VERSION = 1;
 
-    this._sendFieldsetRateLimited([
+    await this._sendFieldsetRateLimited([
       OutcomeMessageType.CANCEL_HISTORICAL_DATA,
       VERSION,
       requestId
@@ -1515,7 +1560,7 @@ class Client {
     Note that formatData parameter affects intraday bars only
     1-day bars always return with date in YYYYMMDD format
     */
-    let requestId = this._allocateRequestId();
+    let requestId = await this._allocateRequestId();
 
     let contract = p.contract;
     let whatToShow = p.whatToShow;
@@ -1547,7 +1592,7 @@ class Client {
       formatDate
     ];
 
-    this._sendFieldsetExpirable(flds);
+    await this._sendFieldsetExpirable(flds);
     return await this._incomeHandler.awaitRequestId(requestId);
   }
 
@@ -1558,7 +1603,7 @@ class Client {
       throw new Error("It does not support head time stamp requests.");
     }
 
-    this._sendFieldsetRateLimited([OutcomeMessageType.CANCEL_HEAD_TIMESTAMP, requestId]);
+    await this._sendFieldsetRateLimited([OutcomeMessageType.CANCEL_HEAD_TIMESTAMP, requestId]);
   }
 
 
@@ -1569,7 +1614,7 @@ class Client {
     useRth: bool,
     timePeriod: str */
 
-    let requestId = this._allocateRequestId();
+    let requestId = await this._allocateRequestId();
     let contract = p.contract;
     let useRth = p.useRth;
     let timePeriod = p.timePeriod;
@@ -1578,7 +1623,7 @@ class Client {
       throw new Error("It does not support histogram requests.");
     }
 
-    this._sendFieldsetExpirable([
+    await this._sendFieldsetExpirable([
       OutcomeMessageType.REQ_HISTOGRAM_DATA,
       requestId,
       contract.conId,
@@ -1608,7 +1653,7 @@ class Client {
       throw new Error("It does not support histogram requests.");
     }
 
-    this._sendFieldsetRateLimited([OutcomeMessageType.CANCEL_HISTOGRAM_DATA, requestId]);
+    await this._sendFieldsetRateLimited([OutcomeMessageType.CANCEL_HISTOGRAM_DATA, requestId]);
   }
 
 
@@ -1624,7 +1669,7 @@ class Client {
     ignoreSize: bool,
     miscOptions: TagValueList
     */
-    let requestId = this._allocateRequestId();
+    let requestId = await this._allocateRequestId();
     let contract = p.contract;
     let startDateTime = p.startDateTime;
     let endDateTime = p.endDateTime;
@@ -1671,7 +1716,7 @@ class Client {
 
     flds.push(miscOptionsString);
 
-    this._sendFieldsetExpirable(flds);
+    await this._sendFieldsetExpirable(flds);
     return await this._incomeHandler.awaitRequestId(requestId);
   }
 
@@ -1687,7 +1732,7 @@ class Client {
     /* Requests an XML string that describes all possible scanner queries. */
     const VERSION = 1;
 
-    this._sendFieldsetRateLimited([OutcomeMessageType.REQ_SCANNER_PARAMETERS, VERSION]);
+    await this._sendFieldsetRateLimited([OutcomeMessageType.REQ_SCANNER_PARAMETERS, VERSION]);
     return await this._incomeHandler.awaitMessageType(IncomeMessageType.SCANNER_PARAMETERS);
   }
 
@@ -1762,7 +1807,7 @@ class Client {
       }
     }
 
-    this._sendFieldsetExpirable(flds);
+    await this._sendFieldsetExpirable(flds);
     return await this._incomeHandler.awaitRequestId(requestId);
   }
 
@@ -1772,7 +1817,7 @@ class Client {
     /* requestId:int - The ticker ID. Must be a unique value. */
     const VERSION = 1;
 
-    this._sendFieldsetRateLimited([OutcomeMessageType.CANCEL_SCANNER_SUBSCRIPTION, VERSION, requestId]);
+    await this._sendFieldsetRateLimited([OutcomeMessageType.CANCEL_SCANNER_SUBSCRIPTION, VERSION, requestId]);
   }
 
 
@@ -1869,7 +1914,7 @@ class Client {
     const VERSION = 1;
 
     // send req mkt data msg
-    this._sendFieldsetRateLimited([OutcomeMessageType.CANCEL_REAL_TIME_BARS, VERSION, requestId]);
+    await this._sendFieldsetRateLimited([OutcomeMessageType.CANCEL_REAL_TIME_BARS, VERSION, requestId]);
   }
 
 
@@ -2185,7 +2230,7 @@ class Client {
     */
     assert(!p.requestId);
 
-    let requestId = this._allocateRequestId();
+    let requestId = await this._allocateRequestId();
     let underlyingSymbol = p.contract.symbol;
     let futFopExchange = p.futFopExchange;
     let underlyingSecType = p.contract.secType;
@@ -2195,7 +2240,7 @@ class Client {
       throw new Error("It does not support security definition option request.");
     }
 
-    this._sendFieldsetExpirable([OutcomeMessageType.REQ_SEC_DEF_OPT_PARAMS,
+    await this._sendFieldsetExpirable([OutcomeMessageType.REQ_SEC_DEF_OPT_PARAMS,
       requestId,
       underlyingSymbol,
       futFopExchange,

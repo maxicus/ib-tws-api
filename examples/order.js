@@ -3,14 +3,12 @@ import { Client, Contract, Order } from '../index.js';
 
 
 async function run() {
-  let api = new Client();
-
-  await api.connect({
+  let api = new Client({
     host: '127.0.0.1',
     port: 4001
-  })
+  });
 
-  let order1 = api.placeOrder({
+  let order1 = await api.placeOrder({
     contract: Contract.stock('AAPL'),
     order: Order.limit({
       action: 'BUY',
@@ -19,7 +17,7 @@ async function run() {
     })
   });
 
-  let order2 = api.placeOrder({
+  let order2 = await api.placeOrder({
     contract: Contract.stock('GOOG'),
     order: Order.limit({
       action: 'SELL',

@@ -3,16 +3,14 @@ import { Client, Contract } from '../index.js';
 
 
 async function run() {
-  let api = new Client();
-
-  await api.connect({
+  let api = new Client({
     host: '127.0.0.1',
     port: 4001
-  })
+  });
 
   let contract = Contract.stock('SPY', 'SMART', 'USD');
 
-  let e = api.streamTickByTickData({
+  let e = await api.streamTickByTickData({
     contract: contract,
     tickType: 'BidAsk',
     numberOfTicks: 0,

@@ -61,6 +61,12 @@ class ProtocolBytes {
 
 
 
+  removeAllListeners() {
+    this._emitter.removeAllListeners();
+  }
+
+
+
   disconnect() {
     this._socket.end();
   }
