@@ -141,7 +141,10 @@ class IncomeFieldsetHandlerBus {
         this.requestIdResolve(requestId, value);
       } else {
         // it's awaited by promise
-        this.requestIdReject(requestId, value);
+        let e = new Error(value.message ? value.message : 'ib-tws-api generic error');
+        e.details = value;
+
+        this.requestIdReject(requestId, e);
       }
       return;
     }
