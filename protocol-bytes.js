@@ -162,7 +162,7 @@ class ProtocolBytes {
       this._dataPending = data;
     }
 
-    while (this._dataPending) {
+    while (this._dataPending && this._dataPending.length >= 4) {
       let stringLength = this._dataPending.readInt32BE(0);
       if (this._dataPending.length < stringLength + 4) {
         debuglog('not full message received, waiting for remainder');
