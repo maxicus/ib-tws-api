@@ -18,12 +18,10 @@ Explore examples [here](https://github.com/maxicus/ib-tws-api/tree/master/exampl
 ```js
 import { Client } from 'ib-tws-api';
 
-let api = new Client();
-
-await api.connect({
+let api = new Client({
   host: '127.0.0.1',
   port: 4001
-})
+});
 
 let time = await api.getCurrentTime();
 console.log('current time: ' + time);
