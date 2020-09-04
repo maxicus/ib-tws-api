@@ -60,7 +60,9 @@ class IncomeFieldsetHandlerBus {
         }
       }
 
-      reject(new Error('ib-tws-api: timeout'));
+      let e = new Error('ib-tws-api: timeout');
+      e.code = 'timeout';
+      reject(e);
     }, this._timeoutMs);
   }
 
@@ -142,6 +144,9 @@ class IncomeFieldsetHandlerBus {
       } else {
         // it's awaited by promise
         let e = new Error(value.message ? value.message : 'ib-tws-api generic error');
+        if (value.message == 'No market data during competing live session') {
+          e.code = 'tooManyParallelRequests';
+        }
         e.details = value;
 
         this.requestIdReject(requestId, e);
@@ -191,7 +196,9 @@ class IncomeFieldsetHandlerBus {
         }
       }
 
-      reject(new Error('ib-tws-api: timeout'));
+      let e = new Error('ib-tws-api: timeout');
+      e.code = 'timeout';
+      reject(e);
     }, this._timeoutMs);
 
     return key;
