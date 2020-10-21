@@ -95,7 +95,7 @@ export default class Contract {
 
 
   static index(symbolOrData) {
-    return Contract._toContract(symbolOrData, 'STK', {
+    return Contract._toContract(symbolOrData, 'IND', {
       currency: 'USD',
       exchange: 'CBOE'
     });
