@@ -32,7 +32,7 @@ console.log('current time: ' + time);
 ```js
 let contract = Contract.forex('EURUSD');
 
-let e = api.streamMarketData({
+let e = await api.streamMarketData({
   contract: contract
 });
 
