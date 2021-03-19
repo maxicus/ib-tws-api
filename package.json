@@ -4,6 +4,7 @@
   "description": "Interactive Brokers API client for Node.JS. TWS or IB Gateway as a server",
   "version": "1.2.0",
   "license": "MIT",
+  "type": "module",
   "author": {
     "name": "Max Shaposhnikov",
     "email": "pub@maxicus.dev"
