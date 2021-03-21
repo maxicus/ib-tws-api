@@ -76,6 +76,4 @@ const OutcomeMessageType = {
   REQ_COMPLETED_ORDERS: 99
 };
 
-
-
 export default OutcomeMessageType;

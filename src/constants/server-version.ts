@@ -87,6 +87,4 @@ const ServerVersion = {
   MIN_SERVER_VER_PRICE_MGMT_ALGO: 151,
 };
 
-
-
 export default ServerVersion;

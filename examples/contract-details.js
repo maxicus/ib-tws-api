@@ -1,4 +1,4 @@
-import { Client, Contract, Order } from '../index.js';
+import { Client, Contract, Order } from '../dist/index';
 
 
 
@@ -11,7 +11,6 @@ async function run() {
   let details = await api.getContractDetails(Contract.stock('AAPL'));
   console.log(details);
 }
-
 
 
 run()

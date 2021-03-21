@@ -1,4 +1,4 @@
-import { Client } from '../index.js';
+import { Client } from '../dist/index';
 
 
 

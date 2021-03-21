@@ -1,23 +1,23 @@
-import assert from 'assert';
-import OutcomeMessageType from '../const-outcome-message-type.js';
-import ServerVersion from '../const-server-version.js';
+import OutcomeMessageType from '../constants/outcome-message-type';
+import ServerVersion from '../constants/server-version';
 
 
-
-export function request_placeOrder(serverVersion, p) {
-  /*
-  p: orderId:OrderId, contract:Contract, order:Order
-
-  Call this function to place an order. The order status will
-  be returned by the orderStatus event.
-
-  orderId:OrderId - The order id. You must specify a unique value. When the
-      order START_APItus returns, it will be identified by this tag.
-      This tag is also used when canceling the order.
-  contract:Contract - This structure contains a description of the
-      contract which is being traded.
-  order:Order - This structure contains the details of tradedhe order.
-      Note: Each client MUST connect with a unique clientId.*/
+/*
+ * p: orderId:OrderId, contract:Contract, order:Order
+ *
+ * Call this function to place an order. The order status will
+ * be returned by the orderStatus event.
+ * 
+ * orderId:OrderId - The order id. You must specify a unique value. When the
+ * order START_APItus returns, it will be identified by this tag.
+ * This tag is also used when canceling the order.
+ * contract:Contract - This structure contains a description of the
+ * contract which is being traded.
+ * order:Order - This structure contains the details of tradedhe order.
+ * Note: Each client MUST connect with a unique clientId.
+ */
+export function request_placeOrder(serverVersion: number, p: any) {
+  
   let orderId = p.orderId;
   let contract = p.contract;
   let order = p.order;
@@ -27,51 +27,51 @@ export function request_placeOrder(serverVersion, p) {
 
   if (serverVersion < ServerVersion.MIN_SERVER_VER_DELTA_NEUTRAL) {
     if (contract.deltaNeutralContract) {
-      throw new Error("It does not support delta-neutral orders.");
+      throw new Error('It does not support delta-neutral orders.');
     }
   }
 
   if (serverVersion < ServerVersion.MIN_SERVER_VER_SCALE_ORDERS2) {
     if (order.scaleSubsLevelSize != null) {
-      throw new Error("It does not support Subsequent Level Size for Scale orders.");
+      throw new Error('It does not support Subsequent Level Size for Scale orders.');
     }
   }
 
   if (serverVersion < ServerVersion.MIN_SERVER_VER_ALGO_ORDERS) {
     if (order.algoStrategy) {
-      throw new Error("It does not support algo orders.");
+      throw new Error('It does not support algo orders.');
     }
   }
 
   if (serverVersion < ServerVersion.MIN_SERVER_VER_NOT_HELD) {
     if (order.notHeld) {
-      throw new Error("It does not support notHeld parameter.");
+      throw new Error('It does not support notHeld parameter.');
     }
   }
 
   if (serverVersion < ServerVersion.MIN_SERVER_VER_SEC_ID_TYPE) {
     if (contract.secIdType || contract.secId) {
-      throw new Error("It does not support secIdType and secId parameters.");
+      throw new Error('It does not support secIdType and secId parameters.');
     }
   }
 
   if (serverVersion < ServerVersion.MIN_SERVER_VER_PLACE_ORDER_CONID) {
     if (contract.conId && contract.conId > 0) {
-      throw new Error("It does not support conId parameter.");
+      throw new Error('It does not support conId parameter.');
     }
   }
 
   if (serverVersion < ServerVersion.MIN_SERVER_VER_SSHORTX) {
     if (order.exemptCode != -1) {
-      throw new Error("It does not support exemptCode parameter.");
+      throw new Error('It does not support exemptCode parameter.');
     }
   }
 
   if (serverVersion < ServerVersion.MIN_SERVER_VER_SSHORTX) {
     if (contract.comboLegs) {
-      contract.comboLegs.forEach((comboLeg) => {
+      contract.comboLegs.forEach((comboLeg: any) => {
         if (comboLeg.exemptCode != -1) {
-          throw new Error("It does not support exemptCode parameter.");
+          throw new Error('It does not support exemptCode parameter.');
         }
       });
     }
@@ -79,13 +79,13 @@ export function request_placeOrder(serverVersion, p) {
 
   if (serverVersion < ServerVersion.MIN_SERVER_VER_HEDGE_ORDERS) {
     if (order.hedgeType) {
-      throw new Error("It does not support hedge orders.");
+      throw new Error('It does not support hedge orders.');
     }
   }
 
   if (serverVersion < ServerVersion.MIN_SERVER_VER_OPT_OUT_SMART_ROUTING) {
     if (order.optOutSmartRouting) {
-      throw new Error("It does not support optOutSmartRouting parameter.");
+      throw new Error('It does not support optOutSmartRouting parameter.');
     }
   }
 
@@ -94,7 +94,7 @@ export function request_placeOrder(serverVersion, p) {
           order.deltaNeutralSettlingFirm ||
           order.deltaNeutralClearingAccount ||
           order.deltaNeutralClearingIntent) {
-      throw new Error("It does not support deltaNeutral parameters: ConId, SettlingFirm, ClearingAccount, ClearingIntent.");
+      throw new Error('It does not support deltaNeutral parameters: ConId, SettlingFirm, ClearingAccount, ClearingIntent.');
     }
   }
 
@@ -103,7 +103,7 @@ export function request_placeOrder(serverVersion, p) {
           order.deltaNeutralShortSale ||
           order.deltaNeutralShortSaleSlot > 0 ||
           order.deltaNeutralDesignatedLocation) {
-      throw new Error("It does not support deltaNeutral parameters: OpenClose, ShortSale, ShortSaleSlot, DesignatedLocation.");
+      throw new Error('It does not support deltaNeutral parameters: OpenClose, ShortSale, ShortSaleSlot, DesignatedLocation.');
     }
   }
 
@@ -116,18 +116,18 @@ export function request_placeOrder(serverVersion, p) {
           order.scaleInitPosition != null ||
           order.scaleInitFillQty != null ||
           order.scaleRandomPercent) {
-        throw new Error("It does not support Scale order parameters: PriceAdjustValue, PriceAdjustInterval, " +
-          "ProfitOffset, AutoReset, InitPosition, InitFillQty and RandomPercent");
+        throw new Error('It does not support Scale order parameters: PriceAdjustValue, PriceAdjustInterval, ' +
+          'ProfitOffset, AutoReset, InitPosition, InitFillQty and RandomPercent');
       }
     }
   }
 
   if (serverVersion < ServerVersion.MIN_SERVER_VER_ORDER_COMBO_LEGS_PRICE &&
-      contract.secType == "BAG") {
+      contract.secType == 'BAG') {
     if (order.orderComboLegs) {
-      order.orderComboLegs.forEach((orderComboLeg) => {
+      order.orderComboLegs.forEach((orderComboLeg: any) => {
         if (orderComboLeg.price != null) {
-          throw new Error("It does not support per-leg prices for order combo legs.");
+          throw new Error('It does not support per-leg prices for order combo legs.');
         }
       });
     }
@@ -135,82 +135,82 @@ export function request_placeOrder(serverVersion, p) {
 
   if (serverVersion < ServerVersion.MIN_SERVER_VER_TRAILING_PERCENT) {
     if (order.trailingPercent != null) {
-      throw new Error("It does not support trailing percent parameter");
+      throw new Error('It does not support trailing percent parameter');
     }
   }
 
   if (serverVersion < ServerVersion.MIN_SERVER_VER_TRADING_CLASS) {
     if (contract.tradingClass) {
-      throw new Error("It does not support tradingClass parameter in placeOrder.");
+      throw new Error('It does not support tradingClass parameter in placeOrder.');
     }
   }
 
   if (serverVersion < ServerVersion.MIN_SERVER_VER_SCALE_TABLE) {
     if (order.scaleTable || order.activeStartTime || order.activeStopTime) {
-      throw new Error("It does not support scaleTable, activeStartTime and activeStopTime parameters");
+      throw new Error('It does not support scaleTable, activeStartTime and activeStopTime parameters');
     }
   }
 
   if (serverVersion < ServerVersion.MIN_SERVER_VER_ALGO_ID) {
     if (order.algoId) {
-      throw new Error("It does not support algoId parameter");
+      throw new Error('It does not support algoId parameter');
     }
   }
 
   if (serverVersion < ServerVersion.MIN_SERVER_VER_ORDER_SOLICITED) {
     if (order.solicited) {
-      throw new Error(" It does not support order solicited parameter.");
+      throw new Error(' It does not support order solicited parameter.');
     }
   }
 
   if (serverVersion < ServerVersion.MIN_SERVER_VER_MODELS_SUPPORT) {
     if (order.modelCode) {
-      throw new Error(" It does not support model code parameter.");
+      throw new Error(' It does not support model code parameter.');
     }
   }
 
   if (serverVersion < ServerVersion.MIN_SERVER_VER_EXT_OPERATOR) {
     if (order.extOperator) {
-      throw new Error(" It does not support ext operator parameter");
+      throw new Error(' It does not support ext operator parameter');
     }
   }
 
 
   if (serverVersion < ServerVersion.MIN_SERVER_VER_SOFT_DOLLAR_TIER) {
     if (order.softDollarTier.name || order.softDollarTier.val) {
-      throw new Error("It does not support soft dollar tier");
+      throw new Error('It does not support soft dollar tier');
     }
   }
 
   if (serverVersion < ServerVersion.MIN_SERVER_VER_CASH_QTY) {
     if (order.cashQty) {
-      throw new Error("It does not support cash quantity parameter");
+      throw new Error('It does not support cash quantity parameter');
     }
   }
 
   if (serverVersion < ServerVersion.MIN_SERVER_VER_DECISION_MAKER &&
-      (order.mifid2DecisionMaker != "" || order.mifid2DecisionAlgo != "")) {
-    throw new Error("It does not support MIFID II decision maker parameters");
+      (order.mifid2DecisionMaker != '' || order.mifid2DecisionAlgo != '')) {
+    throw new Error('It does not support MIFID II decision maker parameters');
   }
 
   if (serverVersion < ServerVersion.MIN_SERVER_VER_MIFID_EXECUTION &&
-      (order.mifid2ExecutionTrade != "" || order.mifid2ExecutionAlgo != "")) {
-    throw new Error("It does not support MIFID II execution parameters")
+      (order.mifid2ExecutionTrade != '' || order.mifid2ExecutionAlgo != '')) {
+    throw new Error('It does not support MIFID II execution parameters')
   }
 
   if (serverVersion < ServerVersion.MIN_SERVER_VER_AUTO_PRICE_FOR_HEDGE &&
       order.dontUseAutoPriceForHedge) {
-    throw new Error("It does not support dontUseAutoPriceForHedge parameter");
+    throw new Error('It does not support dontUseAutoPriceForHedge parameter');
   }
 
   if (serverVersion < ServerVersion.MIN_SERVER_VER_ORDER_CONTAINER &&
       order.isOmsContainer) {
-    throw new Error("It does not support oms container parameter");
+    throw new Error('It does not support oms container parameter');
   }
 
   if (serverVersion < ServerVersion.MIN_SERVER_VER_PRICE_MGMT_ALGO &&
       order.usePriceMgmtAlgo) {
-    throw new Error("It does not support Use price management algo requests");
+    throw new Error('It does not support Use price management algo requests');
   }
 
   let VERSION;
@@ -289,11 +289,11 @@ export function request_placeOrder(serverVersion, p) {
   flds.push(order.hidden);        // srv v7 and above
 
   // Send combo legs for BAG requests (srv v8 and above)
-  if (contract.secType == "BAG") {
+  if (contract.secType == 'BAG') {
     let comboLegsCount = contract.comboLegs ? contract.comboLegs.length : 0;
     flds.push(comboLegsCount);
     if (comboLegsCount > 0) {
-      contract.comboLegs.forEach((comboLeg) => {
+      contract.comboLegs.forEach((comboLeg: any) => {
         flds.push(comboLeg.conId);
         flds.push(comboLeg.ratio);
         flds.push(comboLeg.action);
@@ -311,25 +311,25 @@ export function request_placeOrder(serverVersion, p) {
 
   // Send order combo legs for BAG requests
   if (serverVersion >= ServerVersion.MIN_SERVER_VER_ORDER_COMBO_LEGS_PRICE &&
-      contract.secType == "BAG") {
+      contract.secType == 'BAG') {
     let orderComboLegsCount = order.orderComboLegs ? order.orderComboLegs.length : 0;
 
     flds.push(orderComboLegsCount);
     if (orderComboLegsCount) {
-      order.orderComboLegs.forEach((orderComboLeg) => {
+      order.orderComboLegs.forEach((orderComboLeg: any) => {
         flds.push(orderComboLeg.price);
       });
     }
   }
 
   if (serverVersion >= ServerVersion.MIN_SERVER_VER_SMART_COMBO_ROUTING_PARAMS &&
-      contract.secType == "BAG") {
+      contract.secType == 'BAG') {
     let smartComboRoutingParamsCount = order.smartComboRoutingParams ?
       order.smartComboRoutingParams.length : 0;
     flds.push(smartComboRoutingParamsCount);
 
     if (smartComboRoutingParamsCount > 0) {
-      order.smartComboRoutingParams.forEach((tagValue) => {
+      order.smartComboRoutingParams.forEach((tagValue: any) => {
         flds.push(tagValue.tag);
         flds.push(tagValue.value);
       });
@@ -350,7 +350,7 @@ export function request_placeOrder(serverVersion, p) {
   //####################################################################
   // send deprecated sharesAllocation field
 
-  flds.push("");            // srv v9 and above
+  flds.push('');            // srv v9 and above
   flds.push(order.discretionaryAmt); // srv v10 and above
   flds.push(order.goodAfterTime); // srv v11 and above
   flds.push(order.goodTillDate); // srv v12 and above
@@ -371,15 +371,8 @@ export function request_placeOrder(serverVersion, p) {
     flds.push(order.exemptCode);
   }
 
-  // not needed anymore
-  //bool isVolOrder = (order.orderType.CompareNoCase("VOL") == 0)
-
   // srv v19 and above fields
   flds.push(order.ocaType);
-  //if( serverVersion < 38) {
-  // will never happen
-  //      send( /* order.rthOnly */ false);
-  //}
   flds.push(order.rule80A);
   flds.push(order.settlingFirm);
   flds.push(order.allOrNone);
@@ -433,7 +426,7 @@ export function request_placeOrder(serverVersion, p) {
     flds.push(order.scaleSubsLevelSize);
   } else {
     // srv v35 and above)
-    flds.push("");   // for not supported scaleNumComponents
+    flds.push('');   // for not supported scaleNumComponents
     flds.push(order.scaleInitLevelSize);   // for scaleComponentSize
   }
 
@@ -495,7 +488,7 @@ export function request_placeOrder(serverVersion, p) {
       let algoParamsCount = order.algoParams ? order.algoParams.length : order.algoParams;
       flds.push(algoParamsCount);
       if (algoParamsCount > 0) {
-        order.algoParams.forEach((algoParam) => {
+        order.algoParams.forEach((algoParam: any) => {
           flds.push(algoParam.tag);
           flds.push(algoParam.value);
         });
@@ -511,9 +504,9 @@ export function request_placeOrder(serverVersion, p) {
 
   // send miscOptions parameter
   if (serverVersion >= ServerVersion.MIN_SERVER_VER_LINKING) {
-    let miscOptionsStr = "";
+    let miscOptionsStr = '';
     if (order.orderMiscOptions) {
-      order.orderMiscOptions.forEach((tagValue) => {
+      order.orderMiscOptions.forEach((tagValue: any) => {
         miscOptionsStr += tagValue;
       });
     }
@@ -530,7 +523,7 @@ export function request_placeOrder(serverVersion, p) {
   }
 
   if (serverVersion >= ServerVersion.MIN_SERVER_VER_PEGGED_TO_BENCHMARK) {
-    if (order.orderType == "PEG BENCH") {
+    if (order.orderType == 'PEG BENCH') {
       flds.push(order.referenceContractId);
       flds.push(order.isPeggedChangeAmountDecrease);
       flds.push(order.peggedChangeAmount);
@@ -542,14 +535,6 @@ export function request_placeOrder(serverVersion, p) {
 
     if (order.conditions.length > 0) {
       throw new Error('order.conditions not implemented yet');
-      /*
-      order.conditions.forEach((cond) => {
-        flds.push(cond.type());
-        cond.push_fields(flds);
-      });
-
-      flds.push(order.conditionsIgnoreRth);
-      flds.push(order.conditionsCancelOrder);*/
     }
 
     flds.push(order.adjustedOrderType);
@@ -598,7 +583,7 @@ export function request_placeOrder(serverVersion, p) {
 
   if (serverVersion >= ServerVersion.MIN_SERVER_VER_PRICE_MGMT_ALGO) {
     if (order.usePriceMgmtAlgo == null) {
-      flds.push("");
+      flds.push('');
     } else if (order.usePriceMgmtAlgo) {
       flds.push(1);
     } else {

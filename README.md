@@ -229,7 +229,28 @@ market data.
 ## Events
 
 - `error (error)` on error
-- `close` on connection closed
+- `close` on connecti      sweepToFill: 0,
+      displaySize: 0,
+      triggerMethod: 0,
+      outsideRth: 0,
+      hidden: 0,
+      discretionaryAmt: 0,
+      shortSaleSlot: 0,
+      exemptCode: -1,
+      ocaType: 0,
+      allOrNone: 0,
+      eTradeOnly: 1,
+      firmQuoteOnly: 1,
+      auctionStrategy: 0,
+      overridePercentageConstraints: 0,
+      continuousUpdate: 0,
+      optOutSmartRouting: 0,
+      notHeld: 0,
+      whatIf: 0,
+      solicited: 0,
+      randomizeSize: 0,
+      randomizePrice: 0,
+      extOperator: 0,on closed
 - `tick` on market data tick
 
 ## Contract shortcuts

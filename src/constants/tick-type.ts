@@ -92,6 +92,4 @@ const TickType = {
   NOT_SET: 100000
 };
 
-
-
 export default TickType;

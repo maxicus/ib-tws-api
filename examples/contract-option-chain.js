@@ -1,4 +1,4 @@
-import { Client, Contract, Order } from '../index.js';
+import { Client, Contract, Order } from '../dist/index';
 
 
 
