@@ -38,6 +38,10 @@ class Client {
 
     this._connectionPromise = null;
     this._connected = false;
+
+    // marketDataType is connection's mode of operation
+    // should be restored on reconnection if specified by reqMarketDataType
+    this._marketDataType = null;
   }
 
 
@@ -128,8 +132,17 @@ class Client {
 
     this._nextValidId = nextValidId;
 
-    debuglog('connected ');
+    debuglog('connected');
     debuglog({nextValidId: nextValidId, accounts: accounts});
+
+    if (this._marketDataType != null) {
+      debuglog('set marketDataType to ' + this._marketDataType);
+      this._protocolBytes.sendFieldset([
+        OutcomeMessageType.REQ_MARKET_DATA_TYPE,
+        1 /*VERSION */,
+        this._marketDataType
+      ]);
+    }
   }
 
 
@@ -193,10 +206,10 @@ class Client {
   ################## Market Data
   ##########################################################################*/
 
-  /*
-  Starts to stream market data
-  see reqMktData for parameters
-  */
+  /**
+   * Starts to stream market data
+   * see reqMktData for parameters
+   */
   async streamMarketData(p) {
     assert(!p.requestId);
     assert(p.snapshot == null);
@@ -219,10 +232,10 @@ class Client {
 
 
 
-  /*
-  Returns market data snapshot
-  see reqMktData for parameters
-  */
+  /**
+   * Returns market data snapshot
+   * see reqMktData for parameters
+   */
   async getMarketDataSnapshot(p) {
     assert(!p.requestId);
     assert(p.snapshot == null);
@@ -238,27 +251,33 @@ class Client {
 
 
 
+  /**
+   * The API can receive frozen market data from Trader Workstation.
+   * Frozen market data is the last data recorded in our system.
+   * During normal trading hours, the API receives real-time market data. If
+   * you use this function, you are telling TWS to automatically switch to
+   * frozen market data after the close. Then, before the opening of the next
+   * trading day, market data will automatically switch back to real-time
+   * market data.
+   * @param {int} marketDataType: - 1 for real-time streaming market data or
+   *                                2 for frozen market data
+   */
   async reqMarketDataType(marketDataType) {
-    /* The API can receive frozen market data from Trader
-    Workstation. Frozen market data is the last data recorded in our system.
-    During normal trading hours, the API receives real-time market data. If
-    you use this function, you are telling TWS to automatically switch to
-    frozen market data after the close. Then, before the opening of the next
-    trading day, market data will automatically switch back to real-time
-    market data.
-
-    marketDataType:int - 1 for real-time streaming market data or 2 for
-        frozen market data */
-
     if (this._serverVersion < ServerVersion.MIN_SERVER_VER_REQ_MARKET_DATA_TYPE) {
       throw new Error("It does not support market data type requests.");
     }
 
+    // API doesnt send any response to that packet.
+    // Only data available is marketDataType tick sent to each
+    // getMarketDataSnapshot/streamMarketData
     await this._sendFieldsetRateLimited([
       OutcomeMessageType.REQ_MARKET_DATA_TYPE,
       1 /*VERSION */,
       marketDataType
     ]);
+
+    // it's not connection-level mode to restore on reconnection
+    this._marketDataType = marketDataType;
   }
 
 

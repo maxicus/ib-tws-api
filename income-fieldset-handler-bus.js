@@ -19,7 +19,7 @@ class IncomeFieldsetHandlerBus {
 
 
   emit(event, value) {
-    debuglog('sending event ' + event);
+    debuglog('emit event ' + event);
     debuglog(value);
 
     this._eventEmitter.emit(event, value);
@@ -129,7 +129,7 @@ class IncomeFieldsetHandlerBus {
 
 
   requestIdEmit(requestId, event, value) {
-    debuglog('sending event ' + requestId + ' ' + event);
+    debuglog('emit event. requestId ' + requestId + ', event ' + event);
     debuglog(value);
 
     if (!this._requestIdData[requestId]) {
