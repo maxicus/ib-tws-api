@@ -60,7 +60,7 @@ Define
 
 ## Commands
 
-Not all commands provided API itself are implemented since I use it for
+Not all commands provided by API are implemented since I use it for
 myself and I like to work only on something I use.
 But most essential are.
 
