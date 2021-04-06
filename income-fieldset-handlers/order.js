@@ -414,7 +414,7 @@ class OrderDecoder {
 
   decodeSmartComboRoutingParams() {
     if (this.version >= 26) {
-      smartComboRoutingParamsCount = this._shiftInt();
+      const smartComboRoutingParamsCount = this._shiftInt();
       if (smartComboRoutingParamsCount > 0) {
         this.order.smartComboRoutingParams = [];
         for (let n = 0; n < smartComboRoutingParamsCount; n++) {
@@ -490,7 +490,7 @@ class OrderDecoder {
 
   decodeDeltaNeutral() {
     if (this.version >= 20) {
-      deltaNeutralContractPresent = this._shiftBool();
+      const deltaNeutralContractPresent = this._shiftBool();
       if (deltaNeutralContractPresent) {
         this.contract.deltaNeutralContract = DeltaNeutralContract()
         this.contract.deltaNeutralContract.conId = this._shiftInt();
@@ -506,7 +506,7 @@ class OrderDecoder {
     if (this.version >= 21) {
       this.order.algoStrategy = this._shift();
       if (this.order.algoStrategy) {
-        algoParamsCount = this._shiftInt();
+        const algoParamsCount = this._shiftInt();
         if (algoParamsCount > 0) {
           this.order.algoParams = []
           for (let n = 0; n < algoParamsCount; n++) {
@@ -744,14 +744,16 @@ class OrderDecoder {
 
 export function handler_OPEN_ORDER(fields) {
   fields.shift();
-  fields.shift();
 
   let version = null;
   if (this.serverVersion < ServerVersion.MIN_SERVER_VER_ORDER_CONTAINER) {
     version = parseInt(fields.shift());
+  } else {
+    version = this.serverVersion;
   }
 
   let d = new OrderDecoder(version, this.serverVersion, fields);
+
   d.decodeOrderId();   // read orderId
   d.decodeContractFields();   // read contract fields
 

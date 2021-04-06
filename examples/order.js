@@ -29,6 +29,13 @@ async function run() {
   // Check open orders
   //api.reqGlobalCancel();
 
+  console.log('waiting a bit. listen to orderStatus events on production');
+  await new Promise(function(accept, _) {
+      setTimeout(function() {
+          accept();
+      }, 5000);
+  });
+
   let orders = await api.getAllOpenOrders();
   console.log('Opened orders');
   console.log(orders);
