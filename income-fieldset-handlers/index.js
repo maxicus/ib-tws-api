@@ -351,6 +351,8 @@ export default {
     }
 
     this.requestIdResolve(requestId, items);
+
+    this.requestIdEmit(requestId, 'tick', items);
   },
 
 
