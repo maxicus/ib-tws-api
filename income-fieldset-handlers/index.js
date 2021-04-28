@@ -350,6 +350,7 @@ export default {
       items.push(item);
     }
 
+    this.requestIdEmit(requestId, 'tick', items);
   },
 
 
