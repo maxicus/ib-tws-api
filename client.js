@@ -1770,7 +1770,10 @@ class Client {
         scannerSubscriptionFilterOptions:TagValueList
     */
 
-
+    let requestId = await this._allocateRequestId();
+    let subscription = p.subscription
+    let scannerSubscriptionFilterOptions = p.scannerSubscriptionFilterOptions
+    let scannerSubscriptionOptions = p.scannerSubscriptionOptions
 
     if (this._serverVersion < ServerVersion.MIN_SERVER_VER_SCANNER_GENERIC_OPTS &&
           cannerSubscriptionFilterOptions != null) {
