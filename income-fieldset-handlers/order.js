@@ -385,7 +385,7 @@ class OrderDecoder {
         this.contract.comboLegs = [];
 
         for (let n = 0; n < comboLegsCount; n++) {
-            comboLeg = {};
+            const comboLeg = {};
             comboLeg.conId = this._shiftInt();
             comboLeg.ratio = this._shiftInt();
             comboLeg.action = this._shift();
