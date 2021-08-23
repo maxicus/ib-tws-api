@@ -1410,39 +1410,51 @@ class Client {
   #########################################################################
   */
 
-  async getHistoricalData(p) {
-    /*
-    Requests contracts' historical data. When requesting historical data, a
-    finishing time and date is required along with a duration string.
+  /*
+  Requests historical data for a contract. A finishing time and date is required,
+      along with a duration string.
 
-    requestId:TickerId - The id of the request. Must be a unique value. When the
-        market data returns, it whatToShowill be identified by this tag. This is also
-        used when canceling the market data.
-    contract:Contract - This object contains a description of the contract for which
-        market data is being requested.
-    endDateTime:str - Defines a query end date and time at any point during the past 6 mos.
-        Valid values include any date/time within the past six months in the format:
-        yyyymmdd HH:mm:ss ttt
+  requestId: TickerId - The id of the request. Must be a unique value. When the
+      market data returns, it will be identified by this tag. This is also
+      used when canceling the market data request.
 
-        where "ttt" is the optional time zone.
-    duration:str - Set the query duration up to one week, using a time unit
-        of seconds, days or weeks. Valid values include any integer followed by a space
-        and then S (seconds), D (days) or W (week). If no unit is specified, seconds is used.
-    barSizeSetting:str - Specifies the size of the bars that will be returned (within IB/TWS listimits).
-        Valid values include:
-        1 sec
+  contract: Contract - This object contains a description of the contract for which
+      market data is being requested.
+
+  endDateTime: string - Defines a query end date and time at any point during the past 6 mos
+      in the format:
+          yyyymmdd HH:mm:ss ttt
+
+      where "ttt" is the optional time zone, defaulting to the server's timezone. "UTC" works.
+
+  duration: string - Set the query duration up to one week, using a time unit
+      of seconds, days or weeks. Valid values include any integer followed by a space
+      and then S (seconds), D (days) or W (week). If no unit is specified, seconds is used.
+        
+  barSizeSetting: string - Specifies the size of the bars that will be returned (within IB/TWS limits).
+      Valid values are listed at https://interactivebrokers.github.io/tws-api/historical_bars.html#hd_duration:
+        1 secs
         5 secs
+        10 secs
         15 secs
         30 secs
         1 min
         2 mins
         3 mins
         5 mins
+        10 mins
         15 mins
+        20 mins
         30 mins
         1 hour
+        2 hours
+        3 hours
+        4 hours
+        8 hours
         1 day
-    whatToShow:str - Determines the nature of data beinging extracted. Valid values include:
+
+  whatToShow: string - Specify what type of historical data to retrieve, per
+      https://interactivebrokers.github.io/tws-api/historical_bars.html#hd_what_to_show:
         TRADES
         MIDPOINT
         BID
@@ -1450,19 +1462,22 @@ class Client {
         BID_ASK
         HISTORICAL_VOLATILITY
         OPTION_IMPLIED_VOLATILITY
-    useRth:int - Determines whether to return all data available during the requested time span,
-        or only data that falls within regular trading hours. Valid values include:
 
-        0 - all data is returned even where the market in question was outside of its
-        regular trading hours.
-        1 - only data within the regular trading hours is returned, even if the
-        requested time span falls partially or completely outside of the RTH.
-    formatDate: int - Determines the date format applied to returned bars. validd values include:
+  useRth: number - Determines whether to return all data available during the requested time span,
+      or only data that falls within regular trading hours. Valid values are:
 
-        1 - dates applying to bars returned in the format: yyyymmdd{space}{space}hh:mm:dd
-        2 - dates are returned as a long integer specifying the number of seconds since
-            1/1/1970 GMT.
-    */
+      0 - all data is returned even where the market in question was outside of its
+          regular trading hours.
+      1 - only data within the regular trading hours is returned, even if the
+          requested time span falls partially or completely outside of the RTH.
+
+  formatDate: number - Determines the date format of the time field in the returned bars. Valid values include:
+
+      1 - yyyymmdd{space}{space}hh:mm:dd, in the timezone of the server
+      2 - dates are returned as a long integer specifying the number of seconds since
+          1/1/1970 GMT.
+  */
+  async getHistoricalData(p) {
     assert(!p.requestId);
 
     let requestId = await this._allocateRequestId();
@@ -1555,12 +1570,14 @@ class Client {
 
 
 
+  /**
+   * Used if an internet disconnect has occurred or the results of a query
+   * are otherwise delayed and the application is no longer interested in receiving
+   * the data.
+   *
+   * @param {TickerId} requestId - The ticker ID. Must be a unique value.
+   */
   async cancelHistoricalData(requestId) {
-    /* Used if an internet disconnect has occurred or the results of a query
-    are otherwise delayed and the application is no longer interested in receiving
-    the data.
-
-    requestId:TickerId - The ticker ID. Must be a unique value. */
     const VERSION = 1;
 
     await this._sendFieldsetRateLimited([
@@ -1571,14 +1588,21 @@ class Client {
   }
 
 
-
+  /**
+   * Returns the timestamp of earliest available historical data for a contract and data type.
+   *
+   * See https://interactivebrokers.github.io/tws-api/classIBApi_1_1EClient.html#a059b5072d1e8e8e96394e53366eb81f3
+   *
+   * @param {object} params
+   * @param {Contract} params.contract
+   * @param {string} params.whatToShow
+   * @param {number} params.useRth
+   * @param {number} params.formatDate
+   *
+   * Note that formatData parameter affects intraday bars only
+   * 1-day bars always return with date in YYYYMMDD format
+   */
   async getHeadTimeStamp(p) {
-    /*
-    whatToShow: str, useRth: int, formatDate: int
-
-    Note that formatData parameter affects intraday bars only
-    1-day bars always return with date in YYYYMMDD format
-    */
     let requestId = await this._allocateRequestId();
 
     let contract = p.contract;
@@ -1676,18 +1700,25 @@ class Client {
   }
 
 
-
+  /**
+   * Requests historical Time&Sales data for an instrument.
+   *
+   * See https://interactivebrokers.github.io/tws-api/classIBApi_1_1EClient.html#a99dbcf80c99b8f262a524de64b2f9c1e
+   *
+   * @param {object} params
+   * @param {Contract} params.contract
+   * @param {string} params.startDateTime
+   * @param {string} params.endDateTime
+   * @param {number} params.numberOfTicks - Number of distinct data points. Max currently 1000 per request.
+   * @param {string} params.whatToShow - type of data requested ('BID_ASK', 'MIDPOINT', 'TRADES')
+   * @param {number} params.useRth - Data from regular trading hours (1), or all available hours (0)
+   * @param {boolean} params.ignoreSize - A filter only used when the source price is Bid_Ask
+   * @param {TagValueList} params.miscOptions - should be defined as null, reserved for internal use
+   *
+   * Note that formatData parameter affects intraday bars only
+   * 1-day bars always return with date in YYYYMMDD format
+   */
   async getHistoricalTicks(p) {
-    /*
-    contract: Contract,
-    startDateTime: str,
-    endDateTime: str,
-    numberOfTicks: int,
-    whatToShow: str,
-    useRth: int,
-    ignoreSize: bool,
-    miscOptions: TagValueList
-    */
     let requestId = await this._allocateRequestId();
     let contract = p.contract;
     let startDateTime = p.startDateTime;
@@ -2237,19 +2268,23 @@ class Client {
 
 
 
+  /**
+   * Requests security definition option parameters for viewing a
+   * contract's option chain requestId the ID chosen for the request
+   * underlyingSymbol futFopExchange The exchange on which the returned
+   * options are trading. Can be set to the empty string "" for all
+   * exchanges. underlyingSecType The type of the underlying security,
+   * i.e. STK underlyingConId the contract ID of the underlying security.
+   *
+   * See https://interactivebrokers.github.io/tws-api/classIBApi_1_1EClient.html#adb17b291044d2f8dcca5169b2c6fd690
+   *
+   * @params {object} params
+   * @params {Contract} params.contract
+   * @params {string} params.futFopExchange - The exchange on which the returned options are trading.
+   *     Can be set to the empty string for all exchanges.
+   *     NOTE: filtering is done by the library, because the API returns an empty result when futFopExchange is specified
+   */
   async getSecDefOptParams(p) {
-    /* Requests security definition option parameters for viewing a
-    contract's option chain requestId the ID chosen for the request
-    underlyingSymbol futFopExchange The exchange on which the returned
-    options are trading. Can be set to the empty string "" for all
-    exchanges. underlyingSecType The type of the underlying security,
-    i.e. STK underlyingConId the contract ID of the underlying security.
-
-    contract:
-    futFopExchange:str,
-    exchange: client-side filter of exchange of option's,
-      since futFopExchange returns empty result when specified)
-    */
     assert(!p.requestId);
 
     let requestId = await this._allocateRequestId();
@@ -2277,7 +2312,7 @@ class Client {
 
     // client-side filter
     for (let n = 0; n < result.length; n++) {
-      if (result[n].exchange == p.exchange) {
+      if (result[n].exchange === p.exchange) {
         return result[n];
       }
     }
