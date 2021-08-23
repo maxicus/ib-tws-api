@@ -1,6 +1,4 @@
-import { Client, Contract, Order } from '../index.js';
-
-
+import { Client } from '../index.js';
 
 async function run() {
   let api = new Client({
