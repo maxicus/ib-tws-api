@@ -17,6 +17,7 @@ import {
 import {
   request_placeOrder
 } from './requests/order.js';
+import Contract from './contract.js';
 
 
 
@@ -2351,6 +2352,38 @@ class Client {
 
     this._sendFieldsetRateLimited(msg)
     */
+  }
+
+
+
+  /**
+   * Create a combo out of an array of position sizes (positive to BUY, negative to SELL) and contracts.
+   *
+   * For example, to create a straddle, first create the put and call options, then call
+   * createCombo([[1, putOption], [1, callOption]]).
+   *
+   * @param {Array<[number, Contract]>} legs - array of [+/-X, contract] legs for the combo
+   */
+  async createCombo(legs) {
+    // Assume that all contracts have the same symbol, exchange and currency
+    const combo = Contract.combo(legs[0][1].symbol, legs[0][1].exchange, legs[0][1].currency);
+
+    // Get the conIds
+    const promises = legs.map(([_n, l]) => this.getContractDetails(l));
+    const details = await Promise.all(promises);
+
+    combo.comboLegs = [];
+    for (let i = 0; i < legs.length; i++) {
+      const [positionAndOperation, contract] = legs[i];
+      if (!details[i][0].contract.conId)
+        throw new Error(`createCombo didn't find conId for leg #${i}`);
+      combo.comboLegs.push({
+        conId: details[i][0].contract.conId,
+        ratio: Math.abs(positionAndOperation),
+        action: positionAndOperation > 0 ? 'BUY' : 'SELL',
+      });
+    }
+    return combo;
   }
 }
 
