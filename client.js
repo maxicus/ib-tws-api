@@ -46,6 +46,18 @@ class Client {
 
 
 
+  /**
+   * Attaches event listener
+   *
+   * @param {string} eventName
+   * @param {function} listener
+   */
+  on(eventName, listener) {
+    this._emitter.on(eventName, listener);
+  }
+
+
+
   async connect(p) {
     if (p != null) {
       this._connectionParameters = p;
@@ -1430,7 +1442,7 @@ class Client {
   duration: string - Set the query duration up to one week, using a time unit
       of seconds, days or weeks. Valid values include any integer followed by a space
       and then S (seconds), D (days) or W (week). If no unit is specified, seconds is used.
-        
+
   barSizeSetting: string - Specifies the size of the bars that will be returned (within IB/TWS limits).
       Valid values are listed at https://interactivebrokers.github.io/tws-api/historical_bars.html#hd_duration:
         1 secs
